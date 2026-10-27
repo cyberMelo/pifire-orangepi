@@ -4,7 +4,7 @@
       "server": "1.10.10",
       "cookfile": "1.5.0",
       "recipe": "1.0.0",
-      "build": 73
+      "build": 74
     },
     "update_notes": "",
     "update_warnings": ""
@@ -99,6 +99,26 @@
               "/usr/local/bin/pifire/auto-install/orangepi/ota-system.sh"
             ]
           ]
+        },
+        "control": {
+          "py_dependencies": [],
+          "apt_dependencies": [],
+          "command_list": []
+        }
+      }
+    },
+    {
+      "version": "1.10.10",
+      "build": 74,
+      "_note": "Orange Pi fork: certifi 2026.10.23 (PYSEC-2026-4320, CA bundle); repository moved to Codeberg",
+      "reboot_required": false,
+      "dependencies": {
+        "app": {
+          "py_dependencies": [
+            "certifi==2026.10.23"
+          ],
+          "apt_dependencies": [],
+          "command_list": []
         },
         "control": {
           "py_dependencies": [],
