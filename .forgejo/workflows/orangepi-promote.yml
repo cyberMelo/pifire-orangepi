@@ -1,0 +1,59 @@
+# Promotes orangepi-dev to orangepi-stable, the branch the grill installs and
+# updates from.  Run it by hand from the Actions tab when a version is ready:
+# it runs the test suite first and only then moves orangepi-stable
+# (fast-forward only) and tags the release.
+name: Promote to stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "Note per questa versione (facoltativa)"
+        required: false
+        default: ""
+
+concurrency:
+  group: promote-stable
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: codeberg-small
+    container:
+      image: python:3.13-trixie
+    steps:
+      - name: Checkout orangepi-dev
+        env:
+          # write access for the push; a PROMOTE_TOKEN secret (repository write) can replace the automatic token
+          TOKEN: ${{ secrets.PROMOTE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git config --global user.name "Promote to stable"
+          git config --global user.email "actions@noreply.codeberg.org"
+          URL="${{ github.server_url }}/${{ github.repository }}.git"
+          git clone -q --branch orangepi-dev "https://oauth2:${TOKEN}@${URL#https://}" .
+
+      - name: Tests
+        run: |
+          pip install --quiet --root-user-action=ignore -r tests/requirements.txt
+          python -m pytest tests -q
+
+      - name: Fast-forward orangepi-stable to orangepi-dev
+        run: |
+          if git ls-remote --exit-code --heads origin orangepi-stable >/dev/null; then
+            git fetch -q origin orangepi-stable
+            if ! git merge-base --is-ancestor origin/orangepi-stable HEAD; then
+              echo "orangepi-stable has commits that are not in orangepi-dev: merge them into orangepi-dev first." >&2
+              exit 1
+            fi
+          fi
+          git push -q origin HEAD:refs/heads/orangepi-stable
+
+      - name: Tag the release
+        env:
+          NOTES: ${{ github.event.inputs.notes }}
+        run: |
+          TAG="stable-$(date -u +%Y%m%d-%H%M)"
+          git tag -a "$TAG" -m "Stable ${TAG#stable-} $NOTES"
+          git push -q origin "$TAG"
+          echo "Promosso $TAG: $(git rev-parse --short HEAD) — $(git log -1 --format=%s)"

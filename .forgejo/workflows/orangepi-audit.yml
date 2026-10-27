@@ -1,0 +1,43 @@
+# Weekly check of the Python packages installed on the grill against known
+# vulnerabilities.  It changes nothing: libraries are updated only when a new
+# release is prepared (tools/lock_dependencies.sh).  If this run fails, the
+# log says which package is affected (Actions tab on Codeberg).
+name: Vulnerability check
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"   # Monday morning
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: codeberg-small
+    container:
+      image: python:3.13-trixie
+    steps:
+      - name: Checkout the released version (orangepi-stable) when it exists
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git init -q .
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          if git fetch -q --depth 1 origin orangepi-stable 2>/dev/null; then
+            echo "Checking orangepi-stable"
+          else
+            echo "orangepi-stable not created yet, checking orangepi-dev"
+            git fetch -q --depth 1 origin orangepi-dev
+          fi
+          git checkout -q FETCH_HEAD
+
+      - name: Install the grill's Python packages (exact release versions)
+        run: |
+          python -m venv /tmp/pifire
+          /tmp/pifire/bin/pip install --quiet --upgrade pip
+          # same set as tools/lock_dependencies.sh (numpy/scipy come from Debian on the grill)
+          /tmp/pifire/bin/pip install --quiet -c auto-install/constraints.txt -r auto-install/requirements.txt "gpiod>=2.2,<3"
+
+      - name: Known vulnerabilities (pip-audit)
+        shell: bash   # -eo pipefail: the step fails when pip-audit finds something
+        run: |
+          python -m pip install --quiet --root-user-action=ignore pip-audit
+          /tmp/pifire/bin/pip freeze --exclude-editable | grep -viE '^(pip|setuptools)==' > /tmp/installed.txt
+          pip-audit -r /tmp/installed.txt --no-deps --disable-pip --progress-spinner off --desc

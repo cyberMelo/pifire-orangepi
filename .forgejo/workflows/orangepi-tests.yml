@@ -1,0 +1,48 @@
+# Tests for the Orange Pi port: platform module, controllers, flame-out
+# detector, MQTT remote control, recipes and closed-loop scenarios on the grill
+# simulator.  Runs on Codeberg's hosted Forgejo Actions runners (public repo).
+name: Orange Pi tests
+
+on:
+  push:
+    branches: ["orangepi-dev", "orangepi-stable"]
+  pull_request:
+    branches: ["orangepi-dev", "orangepi-stable"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: codeberg-small
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11: Debian 12, 3.13: Debian 13 (Armbian trixie, the grill)
+        image: ["python:3.11-bookworm", "python:3.13-trixie"]
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - name: Checkout
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git init -q .
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git fetch -q --depth 1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD
+
+      - name: Install test dependencies
+        run: pip install --quiet --root-user-action=ignore -r tests/requirements.txt actionlint-py
+
+      - name: Check workflow files
+        run: actionlint -config-file .forgejo/actionlint.yaml .forgejo/workflows/*.yml
+
+      - name: Check shell scripts
+        run: git ls-files -z '*.sh' | xargs -0 -n1 bash -n   # every shell script in the repository
+
+      - name: Run tests
+        run: python -m pytest tests -q
+
+      - name: Simulator comparison
+        if: matrix.image == 'python:3.13-trixie'
+        run: |
+          python -m tools.grill_sim --compare pid pid_ac pid_sp pid_clamping
+          python -m tools.grill_sim --scenario flameout --no-flameout-detect

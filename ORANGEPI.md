@@ -22,7 +22,7 @@ Fatto:
 - **PID in °C**: i controller ora lavorano sempre in °F internamente, come i loro parametri. Prima, in °C, PB e finestre (pensati in °F) davano un controllo diverso da quello previsto. Tolto anche il "colpo" derivativo del primo ciclo (partiva da un valore fittizio di 150°).
 - **Fiamma spenta**: nuovo rilevatore (`controller/flameout.py`, attivo di default in Hold).
 - **Comandi da Home Assistant** via MQTT, con regole di sicurezza.
-- **Simulatore del grill** (`tools/grill_sim`) e **test automatici** su GitHub a ogni push.
+- **Simulatore del grill** (`tools/grill_sim`) e **test automatici** su Codeberg a ogni push.
 - **Web app**: dashboard *Moderna* e tema scuro *Ember* per tutte le pagine (vedi sotto).
 - **Rete Wi-Fi di emergenza**: se il grill resta senza Wi-Fi accende la rete aperta *PiFire-Setup* per sceglierne una nuova dal telefono (vedi sotto).
 - **Correzioni a PiFire**: in °C il target di una sonda finiva sulla temperatura del grill; due comandi ravvicinati (es. target e attivazione) si annullavano a vicenda.
@@ -46,21 +46,16 @@ L'immagine Debian ufficiale di Orange Pi (Bookworm, kernel 6.1) va bene lo stess
 
 Per ora **non collegare niente all'header** a 40 pin.
 
-### 2. Accesso al repository privato
+### 2. Scaricare il repository
 
-Sull'Orange Pi:
-
-```bash
-sudo mkdir -p /root/.ssh && sudo ssh-keygen -t ed25519 -N "" -f /root/.ssh/id_ed25519
-sudo cat /root/.ssh/id_ed25519.pub
-```
-
-Su GitHub, in questo repository: **Settings → Deploy keys → Add deploy key**. Incolla la chiave e lascia **"Allow write access" disattivato**: l'Orange Pi può solo scaricare.
+Il repository è pubblico su [Codeberg](https://codeberg.org/cannos88/pifire-orangepi): non servono chiavi.
 
 ```bash
-sudo GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new" \
-  git clone -b orangepi-dev git@github.com:cannos88/pifire-orangepi.git /opt/pifire-setup
+sudo apt install -y git
+sudo git clone -b orangepi-dev https://codeberg.org/cannos88/pifire-orangepi.git /opt/pifire-setup
 ```
+
+(Se un giorno tornasse privato: `PIFIRE_REPO=git@codeberg.org:cannos88/pifire-orangepi.git` e `setup.sh` crea la chiave di root da aggiungere come chiave di deploy in sola lettura.)
 
 ### 3. Preparazione e installazione
 
@@ -78,7 +73,7 @@ Lo script chiede conferma prima di ogni passo. Sono i passi che un aggiornamento
 3. componente Debian `contrib`, che serve all'installer;
 4. disattivazione della console seriale, necessaria solo per tasti/encoder sui pin 8 e 10;
 5. overlay I2C1 (pin 3 e 5, ADS1115) e SPI1;
-6. verifica della chiave di accesso a GitHub;
+6. accesso al repository (niente da fare con il repository pubblico);
 7. rete Wi-Fi di emergenza: NetworkManager e servizio `pifire-wifi` (vedi [Wi-Fi e rete di emergenza](#wi-fi-e-rete-di-emergenza));
 8. installer di PiFire, dopo il riavvio se sono cambiate impostazioni di boot o di rete.
 
@@ -219,7 +214,7 @@ Le librerie si aggiornano solo preparando una nuova versione:
 3. test, prova sul grill, *Promote to stable*.
 I test controllano che requirements, constraints e manifest siano allineati.
 
-**Controllo vulnerabilità** (workflow *Vulnerability check*): ogni lunedì installa le librerie della versione stabile e le confronta con il database delle vulnerabilità note (`pip-audit`). Non cambia niente: se trova qualcosa il run fallisce, GitHub ti manda una mail e decidiamo se serve una nuova versione.
+**Controllo vulnerabilità** (workflow *Vulnerability check*): ogni lunedì installa le librerie della versione stabile e le confronta con il database delle vulnerabilità note (`pip-audit`). Non cambia niente: se trova qualcosa il run fallisce (scheda Actions di Codeberg) e decidiamo se serve una nuova versione.
 
 Limiti noti, da affrontare più avanti:
 - la web app non ha login: chiunque sia sulla rete di casa può comandare il grill (come in PiFire originale);
@@ -253,13 +248,15 @@ Cosa **non** si fa via OTA: i passi di `setup.sh` (nome in rete, fuso orario, bl
 
 Il primo `setup.sh` installa da `orangepi-dev`. Quando ci sarà una versione stabile (workflow *Promote to stable*), da *Admin → System Updates* si passa al ramo `orangepi-stable` e da lì in poi il grill riceve solo le versioni promosse.
 
-## GitHub Actions
+## Codeberg e Forgejo Actions
 
-- **Orange Pi tests**: a ogni push su `orangepi-dev` e `orangepi-stable` gira la suite completa su Python 3.11 e 3.13. Il confronto del simulatore viene allegato alla run, con grafico e numeri.
+Il repository è su [Codeberg](https://codeberg.org/cannos88/pifire-orangepi), pubblico (licenza MIT, come PiFire): i runner gratuiti di Codeberg funzionano solo per i progetti pubblici. Fino all'ottobre 2026 stava su GitHub. I workflow sono in `.forgejo/workflows/` e girano sui runner `codeberg-small` (2 CPU, durata indicativa entro 5 minuti) in container Python ufficiali, senza azioni esterne.
+
+- **Orange Pi tests**: a ogni push su `orangepi-dev` e `orangepi-stable` gira la suite completa su Python 3.11 e 3.13, più il controllo dei workflow (`actionlint`) e degli script. Il confronto dei controller sul simulatore è nel log.
 - **Vulnerability check**: ogni lunedì mattina, solo controllo (vedi *Sicurezza e dipendenze*).
-- **Promote to stable**: si lancia a mano dalla scheda Actions. Ripete i test e, solo se passano, porta `orangepi-stable` allo stato di `orangepi-dev` e crea un tag `stable-AAAAMMGG-HHMM`. Il grill installa e aggiorna da `orangepi-stable`.
+- **Promote to stable**: si lancia a mano dalla scheda Actions (*Promote to stable → Esegui*). Ripete i test e, solo se passano, porta `orangepi-stable` allo stato di `orangepi-dev` e crea un tag `stable-AAAAMMGG-HHMM`. Il grill installa e aggiorna da `orangepi-stable`. Usa il token automatico del run; se Codeberg non gli desse il permesso di scrivere, crea un token con scrittura sul repository e salvalo come segreto `PROMOTE_TOKEN` (*Impostazioni → Actions → Segreti*).
 
-Per vedere "Promote to stable" nella scheda Actions, imposta `orangepi-dev` come ramo predefinito: Settings → General → Default branch. Il workflow "Deploy static content to Pages" ereditato da PiFire fallisce sui repository privati senza GitHub Pages: si può disattivare dalla scheda Actions.
+Se un run fallisce, il risultato è nella scheda Actions; dalle impostazioni delle notifiche dell'account Codeberg si può scegliere di riceverlo anche per mail.
 
 ## Test senza hardware
 

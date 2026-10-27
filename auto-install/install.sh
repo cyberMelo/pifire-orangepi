@@ -2,12 +2,12 @@
 
 # PiFire installer for the Orange Pi Zero 2W (Orange Pi fork).
 # Run by auto-install/orangepi/setup.sh (step 8), which prepares the board first and passes:
-#   PIFIRE_REPO    Git URL to clone (this fork; git@ URL with the read-only deploy key)
+#   PIFIRE_REPO    Git URL to clone (this fork on Codeberg, public)
 #   PIFIRE_BRANCH  branch to clone (orangepi-dev, later orangepi-stable)
 # Based on the PiFire installer (many thanks to the PiVPN project for the original inspiration).
 
 INSTALL_SCRIPT_VERSION="orangepi"
-PIFIRE_REPO="${PIFIRE_REPO:-git@github.com:cannos88/pifire-orangepi.git}"
+PIFIRE_REPO="${PIFIRE_REPO:-https://codeberg.org/cannos88/pifire-orangepi.git}"
 PIFIRE_BRANCH="${PIFIRE_BRANCH:-orangepi-dev}"
 
 # Create logs directory if it doesn't exist
@@ -127,7 +127,7 @@ fi
 # Grab project files
 echo "*************************************************************************" | tee -a ~/logs/pifire_install.log
 echo "**                                                                     **" | tee -a ~/logs/pifire_install.log
-echo "**      Cloning PiFire from GitHub...                                  **" | tee -a ~/logs/pifire_install.log
+echo "**      Cloning PiFire from Codeberg...                                **" | tee -a ~/logs/pifire_install.log
 echo "**                                                                     **" | tee -a ~/logs/pifire_install.log
 echo "*************************************************************************" | tee -a ~/logs/pifire_install.log
 cd /usr/local/bin

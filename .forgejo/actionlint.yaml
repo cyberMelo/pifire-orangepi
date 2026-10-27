@@ -1,0 +1,6 @@
+# actionlint knows GitHub's runners only: declare Codeberg's hosted runner labels
+self-hosted-runner:
+  labels:
+    - codeberg-tiny
+    - codeberg-small
+    - codeberg-medium
