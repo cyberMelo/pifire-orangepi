@@ -277,6 +277,11 @@ def _init_controller(settings, control):
 	
 	return controllerCore, status
 
+def _has_primary_probe(settings):
+	''' (Orange Pi fork) True when the probe map has a Primary (grill) probe '''
+	probe_info = settings.get('probe_settings', {}).get('probe_map', {}).get('probe_info', [])
+	return any(probe.get('type') == 'Primary' and probe.get('enabled', True) for probe in probe_info)
+
 def _process_system_commands(grill_platform):
 	# Setup access to the system command queue 
 	system_commands = RedisQueue('control:systemq')
@@ -1380,6 +1385,21 @@ while True:
 			control['units_change'] = False
 			read_history(0, flushhistory=True)  # Clear history data
 			# No need to write control, as it should be written by the 'Stop' mode change
+
+		# (Orange Pi fork) No active mode without a Primary (grill) probe: the work cycle reads
+		# the pit temperature from it, and without one the loop died with an IndexError while
+		# igniter and fan stayed on until the process monitor reset the controller.
+		if control['mode'] not in ('Stop', 'Error') and not _has_primary_probe(settings):
+			message = (f'{control["mode"]} Mode not started: no Primary (grill) probe is configured. '
+					   'Run the configuration wizard and add a Primary probe.')
+			eventLogger.error(message)
+			controlLogger.error(message)
+			errors = read_errors()
+			if message not in errors:
+				errors.append(message)
+				write_errors(errors)
+			control['mode'] = 'Stop'
+			write_control(control, direct_write=True, origin='control')
 
 		# Check if there was an Error flagged in Monitor Mode - If no, then change status to active
 		if control['status'] != 'monitor' and control['mode'] != 'Error':
