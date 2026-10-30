@@ -17,19 +17,22 @@ def logs_page(action=None):
     # Get list of log files 
     if not os.path.exists(LOGS_FOLDER):
         os.mkdir(LOGS_FOLDER)
-    log_file_list = os.listdir(LOGS_FOLDER)
-    for file in log_file_list:
-        if not allowed_file(file):
-            log_file_list.remove(file)
+    # (the upstream loop removed items from the list it was iterating, skipping some)
+    log_file_list = [file for file in os.listdir(LOGS_FOLDER) if allowed_file(file)]
 
     if(request.method == 'POST') and ('form' in request.content_type):
         requestform = request.form 
 
         if 'download' in requestform:
+            if requestform.get('selectLog', '') not in log_file_list:
+                abort(400)
             log_file_name = safe_join_name(LOGS_FOLDER, requestform['selectLog']) or abort(400)
             return send_file(log_file_name, as_attachment=True, max_age=0)
         elif 'eventslist' in requestform:
             log_file_name = requestform['logfile']
+            if log_file_name not in log_file_list:
+                # e.g. the "Choose..." placeholder: answer without logging "Unable to open log file"
+                return '<div class="text-center">Select a log to display above.</div>'
             event_list = read_log_file(safe_join_name(LOGS_FOLDER, log_file_name) or abort(400))
             event_list = add_line_numbers(event_list)
             page = int(requestform['page'])

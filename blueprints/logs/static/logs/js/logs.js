@@ -12,6 +12,9 @@ $(document).ready(function(){
 
 function getData(selectFile) {
 	logfile = selectFile.value;
+	if (!logfile) {  // placeholder "Choose...": nothing to load
+		return;
+	}
 	//console.log('logfile selected: ' + logfile);
 
 	currentPage = 1;  // Start on page 1

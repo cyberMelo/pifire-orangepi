@@ -24,7 +24,7 @@
 							<label class="input-group-text" for="selectLog"><i class="fa-solid fa-file"></i>&nbsp; Log File</label>
 							</div>
 							<select class="custom-select" id="selectLog" name="selectLog" onchange="getData(this)">
-								<option selected>Choose...</option>
+								<option value="" selected disabled>Choose...</option>
 								{% for log in log_file_list | sort %}
 								<option value="{{ log }}">{{ log }}</option>
 								{% endfor %}
