@@ -29,5 +29,6 @@ redis==8.1.0
 requests-oauthlib==2.0.0
 requests==2.34.2
 scikit-fuzzy==0.5.0
+smbus2==0.6.1
 urllib3==2.8.0
 Werkzeug==3.1.9

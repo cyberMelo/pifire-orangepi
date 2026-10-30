@@ -25,6 +25,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, ROOT)
 
 from grillplat import opi_gpio  # noqa: E402
+from probes import i2c_bus  # noqa: E402
 
 # PiFire PCB v4.x.x pins (Raspberry Pi BCM numbers, see wizard/wizard_manifest.json)
 PCB_V4 = {
@@ -145,9 +146,14 @@ def report():
 	section('I2C')
 	buses = sorted(glob.glob('/dev/i2c-*'))
 	print('Bus:     ' + (', '.join(buses) if buses else 'nessuno: abilitare l\'overlay I2C1 (pin 3 e 5)'))
+	header = i2c_bus.header_i2c_bus('auto') if buses else None
 	for bus in buses:
 		number = bus.rsplit('-', 1)[1]
 		name = read(f'/sys/class/i2c-dev/i2c-{number}/name', '')
+		controller = os.path.basename(os.path.dirname(os.path.realpath(f'/sys/bus/i2c/devices/i2c-{number}')))
+		role = ('pin 3 e 5 (scheda ADS)' if int(number) == header and any(c in controller for c in i2c_bus.HEADER_CONTROLLERS)
+				else 'HDMI, non usare' if 'hdmi' in controller else '')
+		name = ', '.join(x for x in (name, controller, role) if x)
 		scan = run(['i2cdetect', '-y', number])
 		found = []
 		if scan:

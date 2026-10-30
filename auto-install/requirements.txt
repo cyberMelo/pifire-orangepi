@@ -10,3 +10,4 @@ networkx==3.7  # needed by scikit-fuzzy's control system (fuzzy controller)
 ratelimitingfilter==1.5
 paho-mqtt==2.1.0
 psutil==7.2.2
+smbus2==0.6.1  # ADS1115 probe board on the header I2C bus (probes/ads1115.py)

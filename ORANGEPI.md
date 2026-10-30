@@ -87,6 +87,10 @@ sudo python3 /opt/pifire-setup/auto-install/orangepi/opi_check.py
 
 Il risultato riassume scheda, controller GPIO, I2C (con l'ADS1115 a `0x48` quando è collegato), SPI, PWM, console seriale e la mappa dei pin. **Mandamelo dopo il primo avvio.**
 
+Sullo Zero 2W con Armbian il bus dei pin 3 e 5 è `/dev/i2c-2` (controller `5002400.i2c`), non `i2c-1` come sul Raspberry: `i2c-1` è il canale DDC dell'HDMI. Il controllo lo indica accanto a ogni bus, e il modulo ADS1115 lo trova da solo.
+
+Se `pifire-wifi` risulta *inactive* con `ConditionPathExists=/usr/local/bin/pifire/wifi/service.py was not met`, PiFire non è ancora installato: rilancia `setup.sh` e rispondi sì al passo 8 (dalla build 75 il servizio parte subito dopo l'installazione).
+
 Con le schede montate:
 
 ```bash
@@ -105,6 +109,7 @@ Apri `http://pifire.local` (o l'indirizzo IP dell'Orange Pi) e nel wizard scegli
 - **Relay Type**: *Active High* (modulo SSR della PCB v4)
 - **Fan Type**: *AC Fan*
 - **Unità**: °C (già proposta)
+- **Sonde**: *ADS1115 (Orange Pi, recommended)*, già proposta con la scheda, bus I2C *Auto*. Finché la scheda ADS non è collegata usa *Prototype*: senza l'ADS1115 le letture sarebbero a zero
 
 ## Mappa dei pin (PCB v4 → Orange Pi Zero 2W)
 
@@ -229,7 +234,7 @@ Il fork segue la sua strada: il codice che questo grill non usa è stato tolto i
 |---|---|
 | Raspberry Pi | modulo di piattaforma, installazione a 32 bit e senza uv, `board-config.py` (configurava il `config.txt` del Raspberry), PCB 2.x/3.x/PWM e *Custom* nel wizard, `gpiozero`, `rpi_hardware_pwm` |
 | Display | 30 driver per display SPI/OLED (ILI9341, ILI9488, ST7789, SSD1306) e loro emulazioni. Restano *Nessuno*, *Prototype*, *Protoflex* (prova del motore grafico in una finestra) e `dsi_800x480t.py`, non più nel wizard: è la base del futuro modulo HDMI 1024×600 |
-| Sonde | MAX31865, DS18B20, MCP9600, ADS1015, sonde Bluetooth (Meater, iBBQ) con `bluepy`, `bleak` e `bt_diag.py`. Restano l'ADS1115 (modulo Adafruit, predefinito, e modulo alternativo), *Prototype* e le sonde virtuali |
+| Sonde | MAX31865, DS18B20, MCP9600, ADS1015, sonde Bluetooth (Meater, iBBQ) con `bluepy`, `bleak` e `bt_diag.py`. Restano l'ADS1115 (modulo PiFire su smbus2, predefinito, e modulo Adafruit alternativo), *Prototype* e le sonde virtuali |
 | Servizi | dashboard classiche *Default* e *Basic*, app Android (Socket.IO, notifiche OneSignal), InfluxDB, WLED (con `zeroconf`) |
 | Storia di PiFire | ricette di esempio in inglese, passaggi di aggiornamento delle impostazioni dalle versioni 1.4–1.10.0, voci dell'updater precedenti al fork, `upgrade.sh`, note di rilascio di PiFire |
 | Codice morto | import e variabili inutilizzati, funzioni mai chiamate, immagini senza riferimenti |
@@ -242,7 +247,7 @@ Da *Admin → System Updates* il grill scarica il ramo scelto di questo reposito
 
 Cosa arriva con un aggiornamento:
 - **codice, pagine e grafica**: sempre;
-- **librerie Python e passi di sistema**: solo se sono elencati in `updater/updater_manifest.json` per una *build* più nuova di quella installata. Per questo ogni volta che cambio una libreria o una configurazione di sistema aggiungo una voce al manifest e alzo il numero di build (un test lo controlla). La build 71 porta gli aggiornamenti di sicurezza delle librerie e lancia `auto-install/orangepi/ota-system.sh` (configurazione di supervisor e servizio Wi-Fi). La build 72 aggiorna Apprise alla 1.13.1 (le notifiche non seguono più i redirect HTTP, vedi *Sicurezza e dipendenze*). La build 73 porta tutte le librerie alle versioni nuove (web app su thread invece di eventlet) e rilancia `ota-system.sh`, che aggiorna il comando della web app in supervisor tenendo l'utente con cui gira PiFire. La build 74 aggiorna `certifi` (l'elenco dei certificati per le connessioni HTTPS) alla 2026.10.23, per la segnalazione PYSEC-2026-4320.
+- **librerie Python e passi di sistema**: solo se sono elencati in `updater/updater_manifest.json` per una *build* più nuova di quella installata. Per questo ogni volta che cambio una libreria o una configurazione di sistema aggiungo una voce al manifest e alzo il numero di build (un test lo controlla). La build 71 porta gli aggiornamenti di sicurezza delle librerie e lancia `auto-install/orangepi/ota-system.sh` (configurazione di supervisor e servizio Wi-Fi). La build 72 aggiorna Apprise alla 1.13.1 (le notifiche non seguono più i redirect HTTP, vedi *Sicurezza e dipendenze*). La build 73 porta tutte le librerie alle versioni nuove (web app su thread invece di eventlet) e rilancia `ota-system.sh`, che aggiorna il comando della web app in supervisor tenendo l'utente con cui gira PiFire. La build 74 aggiorna `certifi` (l'elenco dei certificati per le connessioni HTTPS) alla 2026.10.23, per la segnalazione PYSEC-2026-4320. La build 75 aggiunge `smbus2`, con cui il modulo ADS1115 legge le sonde sul bus I2C giusto dello Zero 2W.
 
 Cosa **non** si fa via OTA: i passi di `setup.sh` (nome in rete, fuso orario, blocco del kernel, watchdog, console seriale, overlay, passaggio della rete a NetworkManager). Cambiano come la scheda si avvia o come la si raggiunge: fatti senza nessuno davanti, un errore potrebbe lasciare il grill irraggiungibile. Si fanno una volta, alla prima installazione; se in futuro ne servisse uno nuovo, si rilancia `setup.sh` via SSH e si salta quello che è già fatto.
 

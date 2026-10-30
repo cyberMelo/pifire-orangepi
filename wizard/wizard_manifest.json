@@ -348,10 +348,10 @@
 		},
 		"probes" : {
 			"ads1115_adafruit" : {
-				"friendly_name" : "ADS1115 Adafruit",
+				"friendly_name" : "ADS1115 (Adafruit library)",
 				"filename" : "ads1115_adafruit",
-				"description" : "This is the default module supporting ALL of the ADS1115 16-Bit ADC's and is based on Adafruit's Circuit Python implementation/module.  This version is still actively updated and may support a wider range of hardware.  There has been rumors of sellers shipping ADS1015 12-Bit ADC's instead of the ADS1115 16-Bit ADC's.  If you got one of these, you can try the ADS1015 Adafruit library instead.",
-				"default" : true,
+				"description" : "Alternative module using the Adafruit CircuitPython library (Blinka). It depends on Blinka recognising the board: on the Orange Pi prefer the recommended ADS1115 module.",
+				"default" : false,
 				"image" : "ads1115.png",
 				"reboot_required" : false,
 				"py_dependencies" : [
@@ -604,14 +604,14 @@
 				}
 			},
 			"ads1115" : {
-				"friendly_name" : "Legacy ADS1115",
+				"friendly_name" : "ADS1115 (Orange Pi, recommended)",
 				"filename" : "ads1115",
-				"description" : "WARNING: This module is no longer the default due to reports of issues.  If you experience trouble with this module, use the Adafruit modules.  This is an alternative PiFire module supporting the ADS1115 16-Bit ADC and should only be used if you are experiencing difficulty with the Adafruit module.",
-				"default" : false,
+				"description" : "PiFire module for the ADS1115 16-bit ADC on the PiFire ADS board, read directly over I2C (smbus2). On the Orange Pi Zero 2W it finds the header I2C bus (pins 3 and 5) by itself; the bus can also be set by number.",
+				"default" : true,
 				"image" : "ads1115.png",
 				"reboot_required" : false,
 				"py_dependencies" : [
-					"ADS1115==0.2.1"
+					"smbus2==0.6.1"
 				],
 				"apt_dependencies" : [],
 				"command_list" : [],
@@ -656,6 +656,28 @@
 								"0x4B"
 							],
 							"default" : "0x48",
+							"hidden" : false
+						},
+						{
+							"label" : "i2c_bus",
+							"friendly_name" : "I2C Bus",
+							"description" : "Bus of the header pins 3 and 5. Auto finds it (on the Orange Pi Zero 2W it is /dev/i2c-2); set a number only if Auto does not find the ADS1115.",
+							"type" : "list",
+							"list_values" : [
+								"auto",
+								"0",
+								"1",
+								"2",
+								"3"
+							],
+							"list_labels" : [
+								"Auto",
+								"/dev/i2c-0",
+								"/dev/i2c-1",
+								"/dev/i2c-2",
+								"/dev/i2c-3"
+							],
+							"default" : "auto",
 							"hidden" : false
 						},
 						{
@@ -1181,11 +1203,12 @@
 							"ADC2_rd" : "10000",
 							"ADC3_rd" : "10000",
 							"i2c_bus_addr" : "0x48",
-							"voltage_ref" : "3.28"
+							"voltage_ref" : "3.28",
+							"i2c_bus" : "auto"
 						},
 						"device" : "ADS1115",
-						"module" : "ads1115_adafruit",
-						"module_filename" : "ads1115_adafruit",
+						"module" : "ads1115",
+						"module_filename" : "ads1115",
 						"ports" : [
 							"ADC0",
 							"ADC1",

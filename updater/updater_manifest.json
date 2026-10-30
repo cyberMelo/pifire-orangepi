@@ -4,7 +4,7 @@
       "server": "1.10.10",
       "cookfile": "1.5.0",
       "recipe": "1.0.0",
-      "build": 74
+      "build": 75
     },
     "update_notes": "",
     "update_warnings": ""
@@ -122,6 +122,26 @@
         },
         "control": {
           "py_dependencies": [],
+          "apt_dependencies": [],
+          "command_list": []
+        }
+      }
+    },
+    {
+      "version": "1.10.10",
+      "build": 75,
+      "_note": "Orange Pi fork: ADS1115 read with smbus2 on the header I2C bus found by controller (/dev/i2c-2 on the Zero 2W, not bus 1)",
+      "reboot_required": false,
+      "dependencies": {
+        "app": {
+          "py_dependencies": [],
+          "apt_dependencies": [],
+          "command_list": []
+        },
+        "control": {
+          "py_dependencies": [
+            "smbus2==0.6.1"
+          ],
           "apt_dependencies": [],
           "command_list": []
         }

@@ -274,6 +274,9 @@ if ask "Configuro la rete di emergenza?"; then
 	cp "$REPO_DIR/auto-install/orangepi/pifire-wifi.service" /etc/systemd/system/pifire-wifi.service
 	systemctl daemon-reload
 	systemctl enable pifire-wifi.service >/dev/null 2>&1 && info "Servizio pifire-wifi abilitato (parte quando PiFire è installato)."
+	if [[ -f /usr/local/bin/pifire/wifi/service.py ]]; then
+		systemctl restart pifire-wifi.service && info "Servizio pifire-wifi avviato."
+	fi
 	info "Pagina Wi-Fi: http://$(hostname).local/wifi  ·  rete di emergenza: http://10.42.0.1"
 fi
 
@@ -286,6 +289,10 @@ elif [[ $REBOOT_NEEDED -eq 1 ]]; then
 	info "Prima riavvia per attivare le modifiche di boot, poi rilancia questo script e salta i passi già fatti."
 elif ask "Avvio l'installer di PiFire (richiede 15-30 minuti)?"; then
 	sudo -u "$RUN_USER" env PIFIRE_REPO="$PIFIRE_REPO" PIFIRE_BRANCH="$PIFIRE_BRANCH" bash "$REPO_DIR/auto-install/install.sh"
+	# pifire-wifi waits for /usr/local/bin/pifire/wifi/service.py, which exists only now
+	if [[ -f /etc/systemd/system/pifire-wifi.service ]] && systemctl restart pifire-wifi.service; then
+		info "Servizio pifire-wifi avviato."
+	fi
 	info "Al termine apri http://$(hostname).local (oppure http://$(hostname -I | awk '{print $1}')) e nel wizard scegli 'PiFire PCB 4.x.x Modular PCB + Orange Pi Zero 2W'."
 fi
 

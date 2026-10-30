@@ -12,6 +12,7 @@
                <li><b>Ricette in italiano:</b> 16 ricette in °C tarate sul Traeger Pro 22. La dashboard mostra la fase in corso e il pulsante <i>Continua</i> quando una fase aspetta te.</li>
                <li><b>Librerie aggiornate</b> alle ultime versioni; la web app non usa più eventlet.</li>
                <li><b>Pulizia:</b> tolto il codice per hardware e servizi che questo grill non usa (Raspberry Pi, display e sonde diversi, sonde Bluetooth, dashboard classiche, app Android, InfluxDB, WLED).</li>
+               <li><b>Sonde ADS1115:</b> il modulo consigliato trova da solo il bus I2C dei pin 3 e 5 (sull'Orange Pi Zero 2W è <code>/dev/i2c-2</code>).</li>
                <li><b>Correzioni:</b> le ricette in °F ora si convertono su un grill in °C; i comandi MQTT non rimbalzano più all'infinito; dopo un aggiornamento PiFire continua a girare con il suo utente.</li>
             </ul>
             <p>Dettagli nel file <code>ORANGEPI.md</code> del repository.</p>
