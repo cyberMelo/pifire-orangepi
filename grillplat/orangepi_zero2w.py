@@ -34,7 +34,7 @@
 """
 
 import os
-from common import is_float, create_logger, get_os_info
+from common import create_logger, get_os_info
 from grillplat.opi_gpio import OutputDevice, Button, SysfsPWM, StoppableThread, \
 	bcm_to_pwm_channel, bcm_to_physical, is_console_pin, find_main_chip
 
@@ -337,7 +337,7 @@ class GrillPlatform:
 
 	def check_cpu_temp(self, arglist):
 		temp = self._read_cpu_temp()
-		if temp is not None and is_float(temp):
+		if isinstance(temp, (int, float)):
 			result = 'OK'
 			message = 'Successfully obtained CPU temperature.'
 			temp = float(temp)

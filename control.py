@@ -292,7 +292,17 @@ def _process_system_commands(grill_platform):
 		command = system_commands.pop()
 		if command[0] in supported_cmds:
 			command_method = getattr(grill_platform, command[0])
-			result = command_method(command)
+			try:
+				result = command_method(command)
+			except Exception as e:
+				# (Orange Pi fork) a failing information command must never stop the control
+				# process: it is the one switching the relays
+				controlLogger.exception(f'System command [{command[0]}] failed')
+				result = {
+					'result' : 'ERROR',
+					'message' : f'ERROR: Command [{command[0]}] failed: {e}',
+					'data' : {}
+				}
 			result['command'] = command
 		else:
 			result = {

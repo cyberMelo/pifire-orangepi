@@ -206,6 +206,29 @@ def test_cpu_temp_prefers_cpu_zone(platform_module, tmp_path):
 	assert platform_module.GrillPlatform._read_cpu_temp(str(tmp_path)) == pytest.approx(47.35)
 
 
+def test_every_system_command_answers(gpiod, platform_module, monkeypatch):
+	"""
+	Each command of supported_commands() runs and returns a result dict.  On the
+	board check_cpu_temp raised AttributeError (is_float on a float) and killed
+	the control process every time the Admin page was opened.
+	"""
+	grill = platform_module.GrillPlatform(make_config())
+	monkeypatch.setattr(platform_module.GrillPlatform, '_read_cpu_temp', staticmethod(lambda *a: 47.3))
+	for command in grill.supported_commands(None)['data']['supported_cmds']:
+		result = getattr(grill, command)([command, None, None, None])
+		assert result['result'] in ('OK', 'ERROR') and isinstance(result['data'], dict), command
+	assert grill.check_cpu_temp(['check_cpu_temp'])['data']['cpu_temp'] == 47.3
+	monkeypatch.setattr(platform_module.GrillPlatform, '_read_cpu_temp', staticmethod(lambda *a: None))
+	assert grill.check_cpu_temp(['check_cpu_temp'])['result'] == 'ERROR'
+	grill.cleanup()
+
+
+def test_is_float_accepts_numbers():
+	from common.common import is_float
+	assert is_float('47.3') and is_float(47.3) and is_float(5)
+	assert not is_float(None) and not is_float(True) and not is_float('abc') and not is_float(float('nan'))
+
+
 def test_wifi_quality_from_proc(platform_module, tmp_path):
 	proc = tmp_path / 'wireless'
 	proc.write_text(

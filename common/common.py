@@ -2132,7 +2132,14 @@ MODE_MAP = {
 # Attributed to Python How
 # Slightly modified to check if string is None
 def is_float(string):
-	if string is not None:
+	# Orange Pi fork: numbers are accepted too.  The Orange Pi platform passed a
+	# float here (CPU temperature) and the AttributeError on .replace() killed the
+	# control process every time the Admin page was opened.
+	if isinstance(string, bool):
+		return False
+	if isinstance(string, (int, float)):
+		return string == string and string not in (float('inf'), float('-inf'))
+	if isinstance(string, str):
 		if string.replace(".", "").isnumeric():
 			return True
 	return False
