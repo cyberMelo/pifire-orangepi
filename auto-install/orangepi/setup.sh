@@ -102,6 +102,14 @@ else
 	fi
 fi
 
+# Pin access: Armbian creates /dev/gpiochip* and /dev/spidev* for root only,
+# while PiFire runs as $RUN_USER (without this it falls back to the simulated platform)
+if [[ "$RUN_USER" != "root" ]]; then
+	bash "$REPO_DIR/auto-install/orangepi/pifire-devices.sh" "$RUN_USER" | sed 's/^/   /'
+else
+	warn "Script lanciato da root senza sudo: salto i permessi GPIO per l'utente di PiFire."
+fi
+
 # Hardware watchdog: if the system hangs, the board reboots by itself and the
 # relays go back off (GPIO reset + pull-downs on the SSR module).
 WD_CONF=/etc/systemd/system.conf.d/pifire-watchdog.conf

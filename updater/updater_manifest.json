@@ -130,13 +130,19 @@
     {
       "version": "1.10.10",
       "build": 75,
-      "_note": "Orange Pi fork: ADS1115 read with smbus2 on the header I2C bus found by controller (/dev/i2c-2 on the Zero 2W, not bus 1)",
+      "_note": "Orange Pi fork: ADS1115 read with smbus2 on the header I2C bus found by controller (/dev/i2c-2 on the Zero 2W, not bus 1); GPIO/SPI access for the PiFire user (udev rule, gpio/spi/i2c groups)",
       "reboot_required": false,
       "dependencies": {
         "app": {
           "py_dependencies": [],
           "apt_dependencies": [],
-          "command_list": []
+          "command_list": [
+            [
+              "sudo",
+              "bash",
+              "/usr/local/bin/pifire/auto-install/orangepi/ota-system.sh"
+            ]
+          ]
         },
         "control": {
           "py_dependencies": [

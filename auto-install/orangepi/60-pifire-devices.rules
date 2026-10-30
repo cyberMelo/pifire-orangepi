@@ -1,0 +1,5 @@
+# PiFire (Orange Pi fork): let the gpio and spi groups use the pin controller
+# and SPI.  Armbian creates /dev/gpiochip* and /dev/spidev* as root-only (0600),
+# while PiFire runs as a normal user.  /dev/i2c-* is already root:i2c 0660.
+SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"
+SUBSYSTEM=="spidev", KERNEL=="spidev*", GROUP="spi", MODE="0660"

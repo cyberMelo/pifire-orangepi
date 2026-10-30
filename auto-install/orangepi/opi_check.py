@@ -16,7 +16,9 @@ on the relay header is enough to see the outputs switch.
 
 import argparse
 import glob
+import grp
 import os
+import stat
 import subprocess
 import sys
 import time
@@ -94,6 +96,13 @@ def report():
 	section('GPIO')
 	chips = opi_gpio.list_gpiochips()
 	print('Chip:    ' + (', '.join(chips) if chips else 'nessun /dev/gpiochip* trovato'))
+	# PiFire runs as a normal user: a root-only chip makes it fall back to the simulated platform
+	for chip in chips:
+		st = os.stat(chip)
+		group = grp.getgrgid(st.st_gid).gr_name if st.st_gid else 'root'
+		usable = group == 'gpio' and st.st_mode & 0o060 == 0o060
+		print(f'  {chip}: gruppo {group}, permessi {stat.filemode(st.st_mode)}'
+			  + ('  OK' if usable else '  <- solo root: lanciare auto-install/orangepi/pifire-devices.sh <utente> e riavviare'))
 	main = None
 	try:
 		import gpiod  # noqa: F401

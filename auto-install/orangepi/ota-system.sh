@@ -30,6 +30,13 @@ if [[ -d "$SUPERVISOR_DIR" ]]; then
 	log "supervisor: configuration updated from $CONF_DIR for user $RUN_USER (applied at the next restart)"
 fi
 
+# Pin access for the user PiFire runs as (gpiochip/spidev are root-only on Armbian)
+DEV_USER=$(sed -n 's/^user=//p' "$SUPERVISOR_DIR/control.conf" 2>/dev/null | tail -1)
+[[ -n "$DEV_USER" ]] || DEV_USER=$(stat -c %U "$PIFIRE_DIR")
+if [[ -f "$PIFIRE_DIR/auto-install/orangepi/pifire-devices.sh" ]]; then
+	log "devices: $(bash "$PIFIRE_DIR/auto-install/orangepi/pifire-devices.sh" "$DEV_USER" 2>&1 | tail -1)"
+fi
+
 # Emergency Wi-Fi network
 if systemctl is-active --quiet NetworkManager && ! grep -qsE '^[[:space:]]*renderer:[[:space:]]*networkd' /etc/netplan/*.yaml; then
 	mkdir -p /etc/NetworkManager/dnsmasq-shared.d
