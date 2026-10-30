@@ -19,7 +19,9 @@
             <div class="card-body">
                 <div id="settings_probe_config">
                     <!-- Probe Config Placeholder -->
-                    {% if selected == '' %}
+                    {% if probe_info|length == 0 %}
+                        <div class="alert alert-warning">No probes configured. Run the <a href="/wizard">configuration wizard</a> and add at least a Primary probe.</div>
+                    {% elif selected == '' %}
                         {{ render_probe_config(probe_info[0], settings) }}
                     {% else %}
                         {% for probe in probe_info %}

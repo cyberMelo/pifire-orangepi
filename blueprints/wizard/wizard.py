@@ -160,3 +160,13 @@ def prepare_wizard_data(form_data):
 				wizardInstallInfo['modules'][module]['config'][config.replace(module_ + 'config_', '')] = value
 
 	return(wizardInstallInfo)
+
+
+def missing_probe_types(probe_map):
+	'''
+	(Orange Pi fork) Probe types the wizard must not finish without: one Primary
+	(grill) probe.  Deleting a probe device in the wizard also deletes the
+	probes on its ports, which left a grill with no probes at all.
+	'''
+	types = [probe.get('type') for probe in probe_map.get('probe_info', [])]
+	return [] if 'Primary' in types else ['Primary']

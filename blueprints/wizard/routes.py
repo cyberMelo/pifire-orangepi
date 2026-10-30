@@ -33,6 +33,22 @@ def wizard_page(action=None):
             if control['mode'] == 'Stop':
                 wizardInstallInfo = prepare_wizard_data(r)
                 store_wizard_install_info(wizardInstallInfo)
+                missing = missing_probe_types(wizardInstallInfo['probe_map'])
+                if missing:
+                    # (Orange Pi fork) removing a probe device also removes its probes; without a
+                    # Primary probe the settings page and the controller have nothing to work with
+                    errors.append(f'No {" / ".join(missing)} probe configured.  In the Probe Input section add '
+                                  'a probe on a port of your probe device (e.g. Grill on ADC0 as Primary) and finish again.')
+                    return render_template(
+                                    'wizard/wizard.html',
+                                    settings=settings,
+                                    control=control,
+                                    errors=errors,
+                                    wizardData=wizardData,
+                                    wizardInstallInfo=wizardInstallInfo,
+                                    page_theme=settings['globals'].get('page_theme', 'light'),
+                                    grill_name=settings['globals'].get('grill_name', '')
+                                    )
                 set_wizard_install_status(0, 'Starting Install...', '')
                 os.system(f'{python_exec} wizard.py &')	# Kickoff Installation
                 return render_template(
