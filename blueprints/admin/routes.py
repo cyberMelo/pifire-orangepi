@@ -240,9 +240,10 @@ def admin_page(action=None):
         if data['result'] != 'OK':
             event = data['message']
             errors.append(event)
-        control['system']['wifi_quality_value'] = data['data'].get('wifi_quality_value', None)
-        control['system']['wifi_quality_max'] = data['data'].get('wifi_quality_max', None)
-        control['system']['wifi_quality_percentage'] = data['data'].get('wifi_quality_percentage', None)
+        else:
+            # (Orange Pi fork) keep the last reading when the control process answered late
+            for key in ('wifi_quality_value', 'wifi_quality_max', 'wifi_quality_percentage'):
+                control['system'][key] = data['data'].get(key, None)
 
     if 'check_throttled' in supported_cmds:
         process_command(action='sys', arglist=['check_throttled'], origin='admin')  # Request supported commands 
@@ -250,10 +251,11 @@ def admin_page(action=None):
         if data['result'] != 'OK':
             event = data['message']
             errors.append(event)
-        control['system']['cpu_throttled'] = data['data'].get('cpu_throttled', None)
-        control['system']['cpu_under_voltage'] = data['data'].get('cpu_under_voltage', None)
+        else:
+            control['system']['cpu_throttled'] = data['data'].get('cpu_throttled', None)
+            control['system']['cpu_under_voltage'] = data['data'].get('cpu_under_voltage', None)
 
-        if control['system']['cpu_throttled'] or control['system']['cpu_under_voltage']: 
+        if control['system'].get('cpu_throttled') or control['system'].get('cpu_under_voltage'): 
             event = "CPU Throttled / Undervoltage event has occurred.  Check your power supply for proper voltage."
             errors.append(event)
 
@@ -263,7 +265,8 @@ def admin_page(action=None):
         if data['result'] != 'OK':
             event = data['message']
             errors.append(event)
-        control['system']['cpu_temp'] = data['data'].get('cpu_temp', None)
+        else:
+            control['system']['cpu_temp'] = data['data'].get('cpu_temp', None)
 
     if 'network_info' in supported_cmds:
         process_command(action='sys', arglist=['network_info'], origin='admin')

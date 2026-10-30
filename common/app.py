@@ -25,7 +25,12 @@ def get_supported_cmds():
 		return data
 
 
-def get_system_command_output(requested='supported_commands', timeout=1):
+def get_system_command_output(requested='supported_commands', timeout=3):
+	'''
+	Wait for the control process to answer a system command.  (Orange Pi fork:
+	1 s was too short for a control loop busy with the real platform, and the
+	loop polled Redis without pause.)
+	'''
 	system_output = RedisQueue('control:systemo')
 	endtime = timeout + time.time()
 	while time.time() < endtime:
@@ -33,6 +38,7 @@ def get_system_command_output(requested='supported_commands', timeout=1):
 			data = system_output.pop()
 			if data['command'][0] == requested:
 				return data
+		time.sleep(0.02)
 
 	return {
 		'command' : [requested, None, None, None],

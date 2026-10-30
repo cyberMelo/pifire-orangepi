@@ -680,7 +680,7 @@
 					<div class="card-body">
 						<b>Wifi Link Quality: </b>{{ control['system']['wifi_quality_value'] }} / {{ control['system']['wifi_quality_max'] }}<br>
 						<b>Wifi Quality Percentage: </b>
-						{% if control['system']['wifi_quality_percentage'] is not none %}
+						{% if control['system']['wifi_quality_percentage'] is number %}
 						<span style="color:{% if control['system']['wifi_quality_percentage'] > 70 %}green{% elif control['system']['wifi_quality_percentage'] > 25 %}orange{% else %}red{% endif %}">
 						{{ control['system']['wifi_quality_percentage'] }}%<br>
 						</span>
@@ -701,9 +701,13 @@
 					</div>
 					<div class="card-body">
 						<b>CPU Temperature: </b>
+						{% if control['system']['cpu_temp'] is number %}
 						<span style="color:{% if control['system']['cpu_temp'] < 50 %}green{% elif control['system']['cpu_temp'] < 80 %}orange{% else %}red{% endif %}">
 						{{ control['system']['cpu_temp'] }}&deg;C
 						</span><br>
+						{% else %}
+						<span>not available, reload the page</span><br>
+						{% endif %}
 						{% if 'cpu_throttled' in control['system'].keys() %}
 						<b>CPU Throttled: </b>
 							{% if control['system']['cpu_throttled'] %}

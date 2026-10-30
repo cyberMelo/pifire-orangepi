@@ -1918,7 +1918,8 @@ def seconds_to_string(seconds):
 
 	return time_string
 
-def get_system_command_output(requested='supported_commands', timeout=1):
+def get_system_command_output(requested='supported_commands', timeout=3):
+	''' Same as common.app.get_system_command_output (Orange Pi fork: 3 s, no busy loop) '''
 	system_output = RedisQueue('control:systemo')
 	endtime = timeout + time.time()
 	while time.time() < endtime:
@@ -1926,6 +1927,7 @@ def get_system_command_output(requested='supported_commands', timeout=1):
 			data = system_output.pop()
 			if data['command'][0] == requested:
 				return data
+		time.sleep(0.02)
 
 	return {
 		'command' : [requested, None, None, None],
