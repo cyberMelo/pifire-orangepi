@@ -22,6 +22,8 @@ Description: This script will start at boot, initialize the relays and
 import logging
 import importlib
 import atexit
+import signal
+import sys
 from common import *  # Common Module for WebUI and Control Program
 from common.process_mon import Process_Monitor
 from common.redis_queue import RedisQueue
@@ -330,7 +332,9 @@ def _work_cycle(mode, grill_platform, probe_complex, display_device, dist_device
 	"""
 
 	# Setup Process Monitor and Start 
-	monitor = Process_Monitor('control', ['supervisorctl', 'restart', 'control'], timeout=30)
+	# (Orange Pi fork) via sudo: PiFire runs as a normal user and the supervisor socket is
+	# root-only; the installer's sudoers rule allows supervisorctl without a password
+	monitor = Process_Monitor('control', ['sudo', '-n', 'supervisorctl', 'restart', 'control'], timeout=30)
 	monitor.start_monitor()
 
 	# Precondition for entering into main control loop 
@@ -1274,6 +1278,11 @@ def exit_handler():
 
 # Register the exit handler
 atexit.register(exit_handler)
+
+# (Orange Pi fork) supervisor stops/restarts the controller with SIGTERM, which by
+# default ends Python without running atexit: turn it into a normal exit so the
+# outputs are switched off before the GPIO lines are released
+signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(0))
 
 # *****************************************
 # Main Program Start / Init and Loop

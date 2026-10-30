@@ -325,6 +325,12 @@ class OutputDevice:
 		return self._line.get()
 
 	def close(self):
+		# Switch the output off before releasing the line: after the release the
+		# kernel may leave the pin driven at its last level, i.e. a relay on.
+		try:
+			self._line.set(False)
+		except Exception:
+			pass
 		self._line.close()
 
 

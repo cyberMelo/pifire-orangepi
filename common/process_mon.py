@@ -53,7 +53,10 @@ class Process_Monitor:
         self.event_logger = create_logger('events', filename='./logs/events.log', messageformat='%(asctime)s [%(levelname)s] %(message)s', level=log_level)
 
         # Setup process monitoring thread 
-        self.process_thread = threading.Thread(target=self._heartbeat_check)
+        # (Orange Pi fork) daemon thread: if the main loop dies, the process must exit
+        # (atexit switches the outputs off, supervisor restarts it) instead of being kept
+        # alive by this thread with the relays left as they were
+        self.process_thread = threading.Thread(target=self._heartbeat_check, daemon=True)
         self.process_thread.start()
 
     def heartbeat(self):

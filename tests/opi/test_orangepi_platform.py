@@ -133,6 +133,29 @@ def test_relays_start_off_active_high(gpiod, platform_module):
 	assert not fake_gpiod.PINS.requested
 
 
+@pytest.mark.parametrize('trigger', ['HIGH', 'LOW'])
+def test_cleanup_switches_relays_off(gpiod, platform_module, trigger):
+	"""
+	Exit with relays on (e.g. the control loop died during Startup): cleanup
+	drives every output to its inactive level before releasing the lines.
+	"""
+	grill = platform_module.GrillPlatform(make_config(triggerlevel=trigger))
+	grill.power_on(); grill.igniter_on(); grill.fan_on(); grill.auger_on()
+	grill.cleanup()
+	off = 0 if trigger == 'HIGH' else 1
+	for name in ('auger', 'igniter', 'power', 'fan'):
+		assert level(PCB_V4_OUTPUTS[name]) == off, name
+
+
+def test_process_monitor_does_not_keep_a_dead_controller_alive():
+	import inspect
+	import common.process_mon as process_mon
+	assert 'daemon=True' in inspect.getsource(process_mon.Process_Monitor.__init__)
+	source = open(os.path.join(ROOT, 'control.py')).read()
+	assert "['sudo', '-n', 'supervisorctl', 'restart', 'control']" in source
+	assert 'signal.signal(signal.SIGTERM' in source
+
+
 def test_relays_start_off_active_low(gpiod, platform_module):
 	grill = platform_module.GrillPlatform(make_config(triggerlevel='LOW'))
 	# Inactive on an active-low relay board means the pin sits at 3.3 V
