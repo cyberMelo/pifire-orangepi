@@ -42,6 +42,11 @@ if [[ -f "$PIFIRE_DIR/auto-install/orangepi/pifire-wait-online.sh" ]]; then
 	log "boot: $(bash "$PIFIRE_DIR/auto-install/orangepi/pifire-wait-online.sh" 2>&1 | tail -1)"
 fi
 
+# HDMI screen: no login prompt or console cursor over the PiFire display
+if [[ -f "$PIFIRE_DIR/auto-install/orangepi/pifire-console.sh" ]]; then
+	log "console: $(bash "$PIFIRE_DIR/auto-install/orangepi/pifire-console.sh" 2>&1 | tail -1)"
+fi
+
 # Emergency Wi-Fi network
 if systemctl is-active --quiet NetworkManager && ! grep -qsE '^[[:space:]]*renderer:[[:space:]]*networkd' /etc/netplan/*.yaml; then
 	mkdir -p /etc/NetworkManager/dnsmasq-shared.d

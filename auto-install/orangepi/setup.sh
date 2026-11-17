@@ -153,7 +153,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-say "4. Console seriale (pin 8 e 10)"
+say "4. Console seriale (pin 8 e 10) e schermo HDMI"
 ENV_FILE=""
 for f in /boot/orangepiEnv.txt /boot/armbianEnv.txt /boot/dietpiEnv.txt; do
 	[[ -f "$f" ]] && ENV_FILE="$f" && break
@@ -175,6 +175,8 @@ if ask "Disattivo la console seriale (resta il login via SSH e sullo schermo HDM
 	fi
 	warn "U-Boot usa comunque il pin 8 durante l'avvio: sul filo CLK dell'encoder metti una resistenza da 1 kΩ in serie."
 fi
+# The HDMI display module draws where the tty1 login and the console cursor would show
+info "$(bash "$REPO_DIR/auto-install/orangepi/pifire-console.sh")"
 
 # ---------------------------------------------------------------------------
 say "5. Overlay I2C e SPI"

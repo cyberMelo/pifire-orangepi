@@ -29,7 +29,7 @@ Fatto:
 - **Sicurezza e pulizia**: corrette falle di PiFire originale nella web app, librerie aggiornate, controllo settimanale delle vulnerabilità; tolto il codice per hardware e servizi che questo grill non usa (vedi *Sicurezza e dipendenze* e *Cosa è stato tolto*).
 - **Ricette in italiano** e fasi della ricetta sulla dashboard Moderna (vedi *Ricette*).
 
-Prossimi passi: modulo display HDMI 1024×600, traduzione italiana e app installabile, taratura del simulatore sulle prime cotture vere.
+Prossimi passi: prova del display HDMI sul grill, traduzione italiana e app installabile, taratura del simulatore sulle prime cotture vere.
 
 ## Preparare l'Orange Pi
 
@@ -71,7 +71,7 @@ Lo script chiede conferma prima di ogni passo. Sono i passi che un aggiornamento
    - **kernel, bootloader e firmware bloccati** alla versione installata: il driver Wi-Fi della Zero 2W è esterno al kernel ufficiale e un aggiornamento automatico durante la stagione dei barbecue potrebbe romperlo. Gli altri pacchetti di sistema continuano ad aggiornarsi con apt. (L'opzione *Freeze* di `armbian-config` in passato ha saltato alcuni pacchetti, per questo lo fa lo script.)
    - **watchdog hardware**: se il sistema si blocca, dopo 15 secondi la scheda si riavvia da sola e i relè tornano spenti, invece di restare per esempio con la coclea accesa;
 3. componente Debian `contrib`, che serve all'installer;
-4. disattivazione della console seriale, necessaria solo per tasti/encoder sui pin 8 e 10;
+4. disattivazione della console seriale, necessaria solo per tasti/encoder sui pin 8 e 10, e schermo HDMI libero per PiFire (niente login su tty1 né cursore della console, vedi [Display HDMI](#display-hdmi));
 5. overlay I2C1 (pin 3 e 5, ADS1115) e SPI1;
 6. accesso al repository (niente da fare con il repository pubblico);
 7. rete Wi-Fi di emergenza: NetworkManager e servizio `pifire-wifi` (vedi [Wi-Fi e rete di emergenza](#wi-fi-e-rete-di-emergenza));
@@ -139,6 +139,19 @@ Apri `http://pifire.local` (o l'indirizzo IP dell'Orange Pi) e nel wizard scegli
   - luminosità e contrasto dai tasti OSD del display: la regolazione via USB richiede un programma per Windows, quindi PiFire non la usa;
   - il display annuncia da solo la risoluzione 1024×600 (EDID) e Linux la usa senza driver. `opi_check.py` lo verifica nella sezione *Display HDMI*: se la risoluzione non è 1024×600, aggiungi `extraargs=video=HDMI-A-1:1024x600@60` in `/boot/armbianEnv.txt` e riavvia.
 - **All'avvio** i pin restano in alta impedenza e il modulo SSR ha resistenze di pull-down sulle basi dei transistor, quindi i relè restano spenti finché PiFire non li comanda. Non abilitare overlay UART2 o PWM4: userebbero i pin 15 e 16, che pilotano i relè.
+
+## Display HDMI
+
+Modulo `hdmi_1024x600` (wizard: *Display HDMI 5" 1024×600*), per il display MPI5006 con touch USB ed encoder KY-040. Disegna con Pillow direttamente nel framebuffer `/dev/fb0`, senza desktop e senza librerie nuove; il touch si legge da `/dev/input` e l'encoder dai pin della PCB v4. Gira in un processo separato: se il display ha un problema, il controllo del grill continua.
+
+- **Schermata principale**: modalità, tempo dall'accensione, ora, ventola/coclea/candeletta, Wi-Fi; temperatura del grill con target e Smoke+; grafico degli ultimi 90 minuti; fino a tre schede per sonde cibo (con target e *PRONTO*) e timer.
+- **Temperatura**: con il grill in Fumo o Mantenimento, ruota l'encoder o tocca la temperatura. Manopola da 65 a 260 °C a passi di 5 (gli stessi limiti della web app), preset della dashboard Moderna (*Hold presets*), conferma con la pressione o con *Imposta*.
+- **Menu delle modalità**: premi l'encoder o tocca il nome della modalità in alto. Compaiono solo le voci sensate per la modalità attuale. **Accendi**, **Spegnimento** e **Stop** con il fuoco acceso chiedono conferma, e la risposta proposta è *Annulla*: il display è sul grill e un tocco può essere involontario.
+- **Rete di emergenza**: a grill spento, quando è attiva *PiFire-Setup* compare la schermata con QR e indirizzo. Da lì non si comanda niente; un tocco mostra il grill per due minuti. A grill acceso resta la schermata principale, con l'icona del Wi-Fi arancione.
+- I comandi passano dagli stessi comandi API della web app (`set mode …`, `set psp …`) e finiscono nel log del controllo (`HDMI display: …`).
+- Senza tocchi, menu e manopola tornano alla schermata principale dopo 45 secondi.
+
+L'encoder usa i pin 8 e 10: serve la console seriale spenta (passo 4 di `setup.sh`). Con la console attiva il modulo lo salta e il touch funziona lo stesso. Lo stesso passo, e l'aggiornamento OTA, tolgono il login da tty1 e il cursore della console, che altrimenti comparirebbero sopra le schermate di PiFire.
 
 ## Fiamma spenta
 
@@ -235,7 +248,7 @@ Il fork segue la sua strada: il codice che questo grill non usa è stato tolto i
 | Tolto | Cosa c'era |
 |---|---|
 | Raspberry Pi | modulo di piattaforma, installazione a 32 bit e senza uv, `board-config.py` (configurava il `config.txt` del Raspberry), PCB 2.x/3.x/PWM e *Custom* nel wizard, `gpiozero`, `rpi_hardware_pwm` |
-| Display | 30 driver per display SPI/OLED (ILI9341, ILI9488, ST7789, SSD1306) e loro emulazioni. Restano *Nessuno*, *Prototype*, *Protoflex* (prova del motore grafico in una finestra) e `dsi_800x480t.py`, non più nel wizard: è la base del futuro modulo HDMI 1024×600 |
+| Display | 30 driver per display SPI/OLED (ILI9341, ILI9488, ST7789, SSD1306) e loro emulazioni. Restano *Nessuno*, *Prototype*, *Protoflex* (prova del motore grafico in una finestra), il modulo [Display HDMI](#display-hdmi) e `dsi_800x480t.py` (pygame), non più nel wizard |
 | Sonde | MAX31865, DS18B20, MCP9600, ADS1015, sonde Bluetooth (Meater, iBBQ) con `bluepy`, `bleak` e `bt_diag.py`. Restano l'ADS1115 (modulo PiFire su smbus2, predefinito, e modulo Adafruit alternativo), *Prototype* e le sonde virtuali |
 | Servizi | dashboard classiche *Default* e *Basic*, app Android (Socket.IO, notifiche OneSignal), InfluxDB, WLED (con `zeroconf`) |
 | Storia di PiFire | ricette di esempio in inglese, passaggi di aggiornamento delle impostazioni dalle versioni 1.4–1.10.0, voci dell'updater precedenti al fork, `upgrade.sh`, note di rilascio di PiFire |
@@ -295,6 +308,6 @@ Sedici ricette in italiano, in °C e tarate sul Pro 22, arrivano con il codice (
 
 ## Grafica
 
-- Display: bozze a 1024×600 in `docs-orangepi/display-mockups/` (`python render_5in.py` le rigenera): schermata principale, temperatura con manopola e preset, rete di emergenza con QR. Sono disegnate in unità da 1,25 pixel, così i testi hanno la dimensione giusta sul vetro da 108 mm. Font Barlow (SIL Open Font License) e icone FontAwesome già incluse in PiFire.
+- Display: anteprime a 1024×600 in `docs-orangepi/display-mockups/`, disegnate dal modulo vero (`python -m display.hdmi_ui docs-orangepi/display-mockups` le rigenera): schermata principale, temperatura con manopola e preset, menu delle modalità, conferma, rete di emergenza con QR, messaggi. Sono disegnate in unità da 1,25 pixel, così i testi hanno la dimensione giusta sul vetro da 108 mm. Font Barlow (SIL Open Font License) e icone FontAwesome già incluse in PiFire.
 - Web app: mockup interattivo [PiFire Web App](https://claude.ai/artifact/Jf3y8ExsQ29xC1qzHDu1rX), realizzato nella dashboard Moderna.
 - Piano di lavoro e lista della spesa: [PiFire Orange Pi](https://claude.ai/artifact/RDBWNfmtbJo1nxR27YnyJm).

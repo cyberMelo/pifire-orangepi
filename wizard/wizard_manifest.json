@@ -993,6 +993,20 @@
 				"settings_dependencies" : {},
 				"config" : []
 			},
+			"hdmi_1024x600" : {
+				"friendly_name" : "Display HDMI 5\" 1024×600 (touch ed encoder)",
+				"filename" : "hdmi_1024x600",
+				"description" : "Display HDMI 1024×600 (MPI5006) con touch USB ed encoder KY-040 sui pin della PCB v4. Disegna nel framebuffer, senza desktop: niente librerie da installare.",
+				"notes" : "Per l'encoder serve la console seriale spenta (setup.sh, passo 4).",
+				"default" : false,
+				"image" : "hdmi_1024x600.png",
+				"reboot_required" : false,
+				"py_dependencies" : [],
+				"apt_dependencies" : [],
+				"command_list" : [],
+				"settings_dependencies" : {},
+				"config" : []
+			},
 			"prototype" : {
 				"friendly_name" : "Prototype",
 				"filename" : "prototype",
