@@ -48,22 +48,37 @@
 {% block scripts %} 
 <script>
 	var action = "{{ action }}";
-	$( document ).ready(function() {
-		setInterval(function(){
-			req = $.ajax({
-				url : '/api/server',
-				type : 'GET',
-				contentType: "application/json; charset=utf-8",
-				traditional: true,
-				success: function (data) {
-					//console.log(data);
-					if(data.server_status == 'available') {
-						//redirect to dashboard 
-						location.href = '/';
-					}
+	// The web app comes back a few seconds before the control process: going to the
+	// dashboard at once showed "The control process did not respond" after every OTA
+	// update.  Wait for the control process too, at most CONTROL_WAIT_MS after the
+	// web app is back; then go anyway, and the dashboard shows a real failure.
+	var CONTROL_WAIT_MS = 60000;
+	var serverBackAt = null;
+
+	function poll() {
+		$.ajax({ url : '/api/server', type : 'GET', timeout : 5000 })
+			.done(function (data) {
+				if (data.server_status != 'available') {
+					return setTimeout(poll, 1000);
 				}
-			});
-		}, 1000);
+				if (serverBackAt === null) {
+					serverBackAt = Date.now();
+				}
+				$.ajax({ url : '/api/sys/check_alive', type : 'GET', timeout : 6000 })
+					.done(function (alive) {
+						if (alive.result == 'OK' || Date.now() - serverBackAt > CONTROL_WAIT_MS) {
+							location.href = '/';  // redirect to dashboard
+						} else {
+							setTimeout(poll, 1000);
+						}
+					})
+					.fail(function () { setTimeout(poll, 1000); });
+			})
+			.fail(function () { setTimeout(poll, 1000); });
+	}
+
+	$( document ).ready(function() {
+		setTimeout(poll, 1000);
 	});
 </script>
 {% endblock %}
