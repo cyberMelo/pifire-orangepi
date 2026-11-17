@@ -276,6 +276,9 @@ if ask "Configuro la rete di emergenza?"; then
 	else
 		info "NetworkManager gestisce già la rete."
 	fi
+	# After the switch above networkd still owns the links until the reboot: the OTA
+	# updater runs this again later.
+	info "$(bash "$REPO_DIR/auto-install/orangepi/pifire-wait-online.sh")"
 
 	mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 	cp "$REPO_DIR/auto-install/orangepi/pifire-captive.conf" /etc/NetworkManager/dnsmasq-shared.d/pifire-captive.conf

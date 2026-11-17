@@ -1,0 +1,2 @@
+# Shell scripts run on the grill and in the tests: always LF, also in a Windows checkout
+*.sh text eol=lf

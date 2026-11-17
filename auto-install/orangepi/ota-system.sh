@@ -37,6 +37,11 @@ if [[ -f "$PIFIRE_DIR/auto-install/orangepi/pifire-devices.sh" ]]; then
 	log "devices: $(bash "$PIFIRE_DIR/auto-install/orangepi/pifire-devices.sh" "$DEV_USER" 2>&1 | tail -1)"
 fi
 
+# Boot: no 20 s wait for systemd-networkd where NetworkManager runs the network
+if [[ -f "$PIFIRE_DIR/auto-install/orangepi/pifire-wait-online.sh" ]]; then
+	log "boot: $(bash "$PIFIRE_DIR/auto-install/orangepi/pifire-wait-online.sh" 2>&1 | tail -1)"
+fi
+
 # Emergency Wi-Fi network
 if systemctl is-active --quiet NetworkManager && ! grep -qsE '^[[:space:]]*renderer:[[:space:]]*networkd' /etc/netplan/*.yaml; then
 	mkdir -p /etc/NetworkManager/dnsmasq-shared.d
