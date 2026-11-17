@@ -103,13 +103,17 @@ def abs_range(fd, code):
 
 
 class TouchDecoder:
-	''' Raw touch events -> taps in screen pixels (a tap = finger lifted) '''
+	''' Raw touch events -> taps in screen pixels (a tap = finger lifted).
+	The MPI5001 sends every contact slot of its report on ABS_X/ABS_Y: the
+	finger first, then empty slots at the far corner (800,480) and on release
+	(0,0).  Only the first X and Y of each report while touching count. '''
 
 	def __init__(self, x_range, y_range, width=PX_W, height=PX_H):
 		self.x_range, self.y_range = x_range, y_range
 		self.width, self.height = width, height
 		self.x = self.y = None
 		self.down = False
+		self.frame = set()    # axes already read in this report
 
 	@staticmethod
 	def _scale(value, rng, size):
@@ -117,13 +121,20 @@ class TouchDecoder:
 		return max(0, min(size - 1, int((value - lo) * size / max(1, hi - lo + 1))))
 
 	def feed(self, ev_type, code, value):
-		if ev_type == EV_ABS and code in (ABS_X, ABS_MT_POSITION_X):
-			self.x = self._scale(value, self.x_range, self.width)
+		if ev_type == EV_SYN:
+			self.frame.clear()
+		elif ev_type == EV_ABS and code in (ABS_X, ABS_MT_POSITION_X):
+			if self.down and 'x' not in self.frame:
+				self.x = self._scale(value, self.x_range, self.width)
+				self.frame.add('x')
 		elif ev_type == EV_ABS and code in (ABS_Y, ABS_MT_POSITION_Y):
-			self.y = self._scale(value, self.y_range, self.height)
+			if self.down and 'y' not in self.frame:
+				self.y = self._scale(value, self.y_range, self.height)
+				self.frame.add('y')
 		elif ev_type == EV_KEY and code == BTN_TOUCH:
 			if value:
 				self.down = True
+				self.x = self.y = None
 			elif self.down:
 				self.down = False
 				if self.x is not None and self.y is not None:

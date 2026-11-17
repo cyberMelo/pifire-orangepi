@@ -68,6 +68,24 @@ def test_touch_multitouch_coordinates_and_screen_edges():
 	assert t.feed(dev.EV_KEY, dev.BTN_TOUCH, 0) == ('tap', 1023, 0)
 
 
+def test_touch_ignores_the_empty_contact_slots_of_the_mpi5001():
+	''' Events recorded on the grill (2026-11-17): every report ends with the
+	empty slots at 800,480, so each tap landed in the bottom right corner '''
+	t = dev.TouchDecoder((0, 800), (0, 480))
+	reports = [
+		[(dev.EV_KEY, dev.BTN_TOUCH, 1), (dev.EV_ABS, 0, 256), (dev.EV_ABS, 1, 182), (dev.EV_ABS, 0, 63),
+		 (dev.EV_ABS, 1, 27), (dev.EV_ABS, 0, 800), (dev.EV_ABS, 1, 480)],
+		[(dev.EV_ABS, 0, 250), (dev.EV_ABS, 1, 180), (dev.EV_ABS, 0, 800), (dev.EV_ABS, 1, 480)],
+		[(dev.EV_KEY, dev.BTN_TOUCH, 0), (dev.EV_ABS, 0, 0), (dev.EV_ABS, 1, 0), (dev.EV_ABS, 0, 800),
+		 (dev.EV_ABS, 1, 480)],
+	]
+	taps = []
+	for report in reports:
+		for event in report + [(dev.EV_SYN, 0, 0)]:
+			taps.append(t.feed(*event))
+	assert [tap for tap in taps if tap] == [('tap', 250 * 1024 // 801, 180 * 600 // 481)]
+
+
 def test_find_touch_device(tmp_path):
 	for n, name in ((0, 'dw_hdmi'), (1, 'QDtech MPI5001 Touchscreen')):
 		d = tmp_path / f'event{n}' / 'device'
