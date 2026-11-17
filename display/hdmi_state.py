@@ -89,7 +89,7 @@ def parse_presets(text, units):
 
 def fmt_temp(value, suffix=''):
 	if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
-		return '--' + suffix
+		return '—'    # no reading (unplugged probe): "--" looks like two bars at 150 pt
 	return f'{value:.0f}{suffix}'
 
 

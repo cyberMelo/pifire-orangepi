@@ -209,7 +209,7 @@ def encoder_thread(events, pins, log):
 		from grillplat.opi_gpio import Button
 		clk, dt, sw = (Button(pins[name]) for name in ('up_clk', 'down_dt', 'enter_sw'))
 	except Exception as error:
-		log.warning(f'HDMI display: encoder not available ({error}); is the serial console still on pins 8 and 10?')
+		log.error(f'HDMI display: encoder not available ({error}); are pins 8 and 10 still the serial console (setup.sh step 4)?')
 		return
 	log.info('HDMI display: encoder on GPIO %s/%s/%s' % (pins['up_clk'], pins['down_dt'], pins['enter_sw']))
 	# Button.is_active is True when the pin is pulled to ground; the decoder wants the pin level

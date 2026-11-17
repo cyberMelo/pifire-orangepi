@@ -66,7 +66,7 @@ def test_home_shows_grill_target_probes_and_outputs():
 def test_stopped_grill_has_no_target_timer_or_smoke_plus():
 	v = hs.Ui('C').view(data(mode='Stop', grill=0, psp=0, splus=True), NOW)
 	assert v['mode_label'] == 'SPENTO' and not v['mode_active']
-	assert v['grill']['temp'] == '--' and v['target'] is None and v['grill']['progress'] is None
+	assert v['grill']['temp'] == '—' and v['target'] is None and v['grill']['progress'] is None
 	assert v['elapsed'] == '' and not v['splus']
 
 

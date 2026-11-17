@@ -161,17 +161,13 @@ done
 info "Configurazione di boot: ${ENV_FILE:-non trovata}"
 info "La PCB v4 collega tasti/encoder ai pin 8 e 10, che sono la console seriale di debug."
 info "Se usi solo la web app puoi lasciarla attiva."
-if ask "Disattivo la console seriale (resta il login via SSH e sullo schermo HDMI)?"; then
-	systemctl disable --now serial-getty@ttyS0.service 2>/dev/null && info "Login seriale disattivato."
+if ask "Disattivo la console seriale (resta il login via SSH)?"; then
 	if [[ -n "$ENV_FILE" ]]; then
-		cp "$ENV_FILE" "$ENV_FILE.pifire.bak"
-		if grep -q '^console=' "$ENV_FILE"; then
-			sed -i -E 's/^console=.*/console=display/' "$ENV_FILE"
-		else
-			echo "console=display" >> "$ENV_FILE"
-		fi
-		info "console=display impostato in $ENV_FILE (backup in $ENV_FILE.pifire.bak)."
+		info "$(bash "$REPO_DIR/auto-install/orangepi/pifire-serial-console.sh" "$ENV_FILE")"
 		REBOOT_NEEDED=1
+	else
+		systemctl disable --now serial-getty@ttyS0.service 2>/dev/null && info "Login seriale disattivato."
+		warn "Configurazione di boot non trovata: il kernel continua a usare la console seriale."
 	fi
 	warn "U-Boot usa comunque il pin 8 durante l'avvio: sul filo CLK dell'encoder metti una resistenza da 1 kΩ in serie."
 fi
