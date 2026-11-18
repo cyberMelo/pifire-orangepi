@@ -16,9 +16,12 @@ concurrency:
   group: promote-stable
   cancel-in-progress: false
 
+permissions:
+  contents: write   # push orangepi-stable and the release tag
+
 jobs:
   promote:
-    runs-on: codeberg-small
+    runs-on: ubuntu-latest
     container:
       image: python:3.13-trixie
     steps:
@@ -29,9 +32,9 @@ jobs:
         run: |
           git config --global --add safe.directory "$PWD"
           git config --global user.name "Promote to stable"
-          git config --global user.email "actions@noreply.codeberg.org"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           URL="${{ github.server_url }}/${{ github.repository }}.git"
-          git clone -q --branch orangepi-dev "https://oauth2:${TOKEN}@${URL#https://}" .
+          git clone -q --branch orangepi-dev "https://x-access-token:${TOKEN}@${URL#https://}" .
 
       - name: Tests
         run: |

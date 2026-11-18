@@ -11,7 +11,7 @@
 #   3. Debian "contrib" component (needed by the installer for the fonts package)
 #   4. serial console off, so header pins 8 and 10 can be used by the buttons/encoder
 #   5. I2C1 (pins 3/5) and SPI1 overlays in the boot configuration
-#   6. repository access: nothing for the public Codeberg repository; a read-only deploy key only for a git@ (private) URL
+#   6. repository access: nothing for the public GitHub repository; a read-only deploy key only for a git@ (private) URL
 #   7. emergency Wi-Fi network: NetworkManager, open network "PiFire-Setup" when no known Wi-Fi
 #   8. PiFire installer, cloning this repository
 #
@@ -20,12 +20,12 @@
 # services) arrives with updates from the web app.
 #
 # Options (environment variables):
-#   PIFIRE_REPO    repository to install   (default: https://codeberg.org/cannos88/pifire-orangepi.git)
+#   PIFIRE_REPO    repository to install   (default: https://github.com/cyberMelo/pifire-orangepi.git)
 #   PIFIRE_BRANCH  branch to install       (default: orangepi-dev)
 
 set -u
 
-PIFIRE_REPO="${PIFIRE_REPO:-https://codeberg.org/cannos88/pifire-orangepi.git}"
+PIFIRE_REPO="${PIFIRE_REPO:-https://github.com/cyberMelo/pifire-orangepi.git}"
 PIFIRE_BRANCH="${PIFIRE_BRANCH:-orangepi-dev}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REBOOT_NEEDED=0
@@ -219,19 +219,19 @@ if [[ "$PIFIRE_REPO" == git@* ]]; then
 		mkdir -p /root/.ssh && chmod 700 /root/.ssh
 		ssh-keygen -t ed25519 -N "" -C "pifire-$(hostname)" -f "$KEY" >/dev/null && info "Chiave creata."
 	fi
-	ssh-keyscan -t ed25519 codeberg.org >> /root/.ssh/known_hosts 2>/dev/null
+	ssh-keyscan -t ed25519 github.com >> /root/.ssh/known_hosts 2>/dev/null
 	sort -u -o /root/.ssh/known_hosts /root/.ssh/known_hosts
 	echo
-	echo "   Aggiungi questa chiave al repository su Codeberg:"
+	echo "   Aggiungi questa chiave al repository su GitHub (Settings → Deploy keys):"
 	echo "   Impostazioni > Chiavi di deploy > Aggiungi chiave  (lascia l'accesso in scrittura DISATTIVATO)"
 	echo
 	cat "$KEY.pub"
 	echo
 	read -r -p " Premi Invio quando l'hai aggiunta... " _
-	if ssh -o BatchMode=yes -T git@codeberg.org 2>&1 | grep -q "successfully authenticated"; then
-		info "Accesso a Codeberg riuscito."
+	if ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+		info "Accesso a GitHub riuscito."
 	else
-		warn "Codeberg non accetta ancora la chiave: controlla la chiave di deploy e riprova."
+		warn "GitHub non accetta ancora la chiave: controlla la chiave di deploy e riprova."
 	fi
 else
 	info "Repository pubblico ($PIFIRE_REPO): nessuna chiave necessaria."

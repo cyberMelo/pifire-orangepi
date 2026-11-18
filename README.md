@@ -14,7 +14,7 @@ Controller smart per barbecue a pellet, derivato da [PiFire](https://github.com/
 | Area | Novità |
 |---|---|
 | **Scheda** | Modulo di piattaforma `grillplat/orangepi_zero2w.py`: GPIO con libgpiod, PWM hardware via sysfs, temperatura CPU e Wi-Fi senza gli strumenti del Raspberry. Le impostazioni restano in numeri GPIO Raspberry e vengono tradotte sul pin dell'Orange Pi nella stessa posizione dell'header. |
-| **Installazione** | Script di preparazione per Armbian (Debian 13 trixie), verifica di pin, I2C, SPI e relè, installer che scarica da questo repository su Codeberg. |
+| **Installazione** | Script di preparazione per Armbian (Debian 13 trixie), verifica di pin, I2C, SPI e relè, installer che scarica da questo repository su GitHub. |
 | **Controllo** | I PID ora lavorano correttamente in °C (prima i parametri, pensati in °F, davano un controllo diverso). Tolto il "colpo" derivativo del primo ciclo. |
 | **Fiamma spenta** | Rilevatore di fiamma spenta in Mantenimento: riduce il pellet appena sospetta lo spegnimento e avvia la riaccensione prima che il braciere si riempia di pellet crudo. Distingue il coperchio aperto. |
 | **Home Assistant** | Comandi via MQTT (modalità, temperatura, Smoke+) con regole di sicurezza; l'accensione da remoto è disattivata di default. |
@@ -24,7 +24,7 @@ Controller smart per barbecue a pellet, derivato da [PiFire](https://github.com/
 | **Correzioni** | In °C il target di una sonda finiva sulla temperatura del grill; due comandi ravvicinati si annullavano a vicenda; caricamento ed esportazione delle cotture non funzionavano; i controller ML e Fuzzy non aggiornavano la temperatura precedente. |
 | **Sicurezza web** | Chiuse falle della web app originale (comandi di shell e percorsi di file presi dalle richieste), web app raggiungibile solo tramite nginx, librerie alle ultime versioni (senza eventlet né scikit-learn, ormai abbandonati) e bloccate alla versione rilasciata, controllo settimanale delle vulnerabilità. |
 | **Pulizia** | Tolto il codice per hardware e servizi che questo grill non usa: Raspberry Pi, display SPI/OLED, sonde diverse dall'ADS1115, sonde Bluetooth, dashboard classiche, app Android, InfluxDB, WLED. |
-| **Sviluppo** | Simulatore del grill per provare i controller, test automatici su Codeberg, promozione manuale della versione stabile. |
+| **Sviluppo** | Simulatore del grill per provare i controller, test automatici su GitHub Actions, promozione manuale della versione stabile. |
 
 Tutte le funzioni di PiFire restano: ricette, storico delle cotture, notifiche, Smart Start, gestione del pellet, aggiornamenti dalla web app.
 
@@ -92,7 +92,7 @@ La guida passo passo è in **[ORANGEPI.md](ORANGEPI.md)**. In breve:
 2. Clone e preparazione (il repository è pubblico, non servono chiavi):
    ```bash
    sudo apt install -y git
-   sudo git clone -b orangepi-dev https://codeberg.org/cannos88/pifire-orangepi.git /opt/pifire-setup
+   sudo git clone -b orangepi-dev https://github.com/cyberMelo/pifire-orangepi.git /opt/pifire-setup
    sudo bash /opt/pifire-setup/auto-install/orangepi/setup.sh
    ```
    Lo script fa una volta sola i passi che gli aggiornamenti non fanno: nome in rete `pifire`, fuso orario, kernel e firmware bloccati, watchdog hardware, console seriale, I2C/SPI, rete di emergenza, poi l'installer.
@@ -117,7 +117,7 @@ La guida passo passo è in **[ORANGEPI.md](ORANGEPI.md)**. In breve:
 | `orangepi-stable` | Versione installata sul grill, aggiornata solo dal workflow *Promote to stable* |
 | `main` | Copia di PiFire originale, per importare i loro aggiornamenti |
 
-Forgejo Actions su Codeberg ([scheda Actions](https://codeberg.org/cannos88/pifire-orangepi/actions), workflow in `.forgejo/workflows/`):
+GitHub Actions ([scheda Actions](https://github.com/cyberMelo/pifire-orangepi/actions), workflow in `.github/workflows/`):
 - **Orange Pi tests**: a ogni push su `orangepi-dev` e `orangepi-stable`, test su Python 3.11 e 3.13, controllo dei workflow e degli script e confronto dei controller sul simulatore (nel log del run).
 - **Vulnerability check**: ogni lunedì controlla le librerie della versione stabile con `pip-audit`; se trova qualcosa il run fallisce. Non aggiorna niente: le librerie sono fissate in `auto-install/constraints.txt` e cambiano solo con una nuova versione (`tools/lock_dependencies.sh`).
 - **Promote to stable**: si avvia a mano dalla scheda *Actions*; ripete i test e, se passano, porta `orangepi-stable` allo stato di `orangepi-dev` con un tag `stable-AAAAMMGG-HHMM`.

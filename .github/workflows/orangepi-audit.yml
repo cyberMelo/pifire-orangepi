@@ -1,7 +1,7 @@
 # Weekly check of the Python packages installed on the grill against known
 # vulnerabilities.  It changes nothing: libraries are updated only when a new
 # release is prepared (tools/lock_dependencies.sh).  If this run fails, the
-# log says which package is affected (Actions tab on Codeberg).
+# log says which package is affected (Actions tab on GitHub).
 name: Vulnerability check
 
 on:
@@ -9,9 +9,12 @@ on:
     - cron: "17 5 * * 1"   # Monday morning
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   audit:
-    runs-on: codeberg-small
+    runs-on: ubuntu-latest
     container:
       image: python:3.13-trixie
     steps:

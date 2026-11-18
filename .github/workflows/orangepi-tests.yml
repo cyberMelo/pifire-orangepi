@@ -1,6 +1,6 @@
 # Tests for the Orange Pi port: platform module, controllers, flame-out
 # detector, MQTT remote control, recipes and closed-loop scenarios on the grill
-# simulator.  Runs on Codeberg's hosted Forgejo Actions runners (public repo).
+# simulator.  Runs on GitHub Actions.
 name: Orange Pi tests
 
 on:
@@ -10,9 +10,12 @@ on:
     branches: ["orangepi-dev", "orangepi-stable"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
-    runs-on: codeberg-small
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -33,7 +36,7 @@ jobs:
         run: pip install --quiet --root-user-action=ignore -r tests/requirements.txt actionlint-py
 
       - name: Check workflow files
-        run: actionlint -config-file .forgejo/actionlint.yaml .forgejo/workflows/*.yml
+        run: actionlint .github/workflows/orangepi-*.yml
 
       - name: Check shell scripts
         run: git ls-files -z '*.sh' | xargs -0 -n1 bash -n   # every shell script in the repository
