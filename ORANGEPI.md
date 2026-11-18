@@ -29,7 +29,7 @@ Fatto:
 - **Sicurezza e pulizia**: corrette falle di PiFire originale nella web app, librerie aggiornate, controllo settimanale delle vulnerabilità; tolto il codice per hardware e servizi che questo grill non usa (vedi *Sicurezza e dipendenze* e *Cosa è stato tolto*).
 - **Ricette in italiano** e fasi della ricetta sulla dashboard Moderna (vedi *Ricette*).
 
-Prossimi passi: prova del display HDMI sul grill, traduzione italiana e app installabile, taratura del simulatore sulle prime cotture vere.
+Prossimi passi: prova dell'encoder e dei relè con la PCB collegata, traduzione italiana e app installabile, taratura del simulatore sulle prime cotture vere.
 
 ## Preparare l'Orange Pi
 
@@ -121,8 +121,8 @@ Apri `http://pifire.local` (o l'indirizzo IP dell'Orange Pi) e nel wizard scegli
 | Relè Coclea | 23 | 16 | PI14 | |
 | Relè Candeletta | 18 | 12 | PI1 | |
 | Relè Ventola | 26 | 37 | PI16 | |
-| Tasto su / encoder CLK | 14 | 8 | PH0 | console seriale |
-| Tasto invio / encoder SW | 15 | 10 | PH1 | console seriale |
+| Tasto su / encoder CLK | 14 | 8 | PH0 | console seriale, da spegnere (passo 4) |
+| Tasto invio / encoder SW | 15 | 10 | PH1 | console seriale, da spegnere (passo 4) |
 | Tasto giù / encoder DT | 16 | 36 | PC12 | |
 | I2C SDA / SCL | 2 / 3 | 3 / 5 | PI8 / PI7 | I2C1 |
 | PWM ventola DC | 13 | 33 | PI12 | **senza PWM hardware**: ponticello al pin 32 (PI11, PWM1) |
@@ -152,6 +152,15 @@ Modulo `hdmi_1024x600` (wizard: *Display HDMI 5" 1024×600*), per il display MPI
 - Senza tocchi, menu e manopola tornano alla schermata principale dopo 45 secondi.
 
 L'encoder usa i pin 8 e 10: serve la console seriale spenta (passo 4 di `setup.sh`). Con la console attiva il modulo lo salta e il touch funziona lo stesso. Lo stesso passo, e l'aggiornamento OTA, tolgono il login da tty1 e il cursore della console, che altrimenti comparirebbero sopra le schermate di PiFire.
+
+Come si spegne la console seriale (`pifire-serial-console.sh`, chiamato dal passo 4):
+- in `/boot/armbianEnv.txt` mette `console=none` e aggiunge `console=tty1` a `extraargs`. `console=display` non basta: il `boot.cmd` di Armbian aggiunge `console=ttyS0,115200` sia per `both` sia per `display`. Una copia del file originale resta in `armbianEnv.txt.pifire.bak`;
+- disattiva `serial-getty@ttyS0`;
+- stacca la UART0 (`5000000.serial`) dal suo driver, subito e a ogni avvio (`/etc/tmpfiles.d/pifire-serial.conf`): anche senza console, il driver tiene i pin PH0/PH1 e l'encoder non può usarli.
+
+Verifica: `opi_check` deve dire `Kernel console su ttyS0: no`, e `gpioinfo -c gpiochip1` deve mostrare le linee 76, 224 e 225 con `consumer=pifire` mentre il controllo gira.
+
+Il touch del MPI5001 manda in ogni pacchetto, dopo il dito, anche i contatti vuoti (a `800,480`, e `0,0` al rilascio): il modulo usa solo la prima coppia X/Y di ogni pacchetto.
 
 ## Fiamma spenta
 
