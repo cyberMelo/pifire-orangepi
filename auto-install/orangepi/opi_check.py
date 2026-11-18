@@ -18,6 +18,7 @@ import argparse
 import glob
 import grp
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -59,6 +60,31 @@ def section(title):
 
 # Display of this grill: MPI5006, 5" IPS 1024x600, HDMI + capacitive touch over USB
 DISPLAY_MODE = '1024x600'
+
+
+def gpio_consumers(info):
+	''' {line offset: consumer} of the busy lines in gpioinfo output.
+	libgpiod tools v1:  line  76:  "PC12"  "pifire"  input  active-low [used]
+	libgpiod tools v2:  line  76:  unnamed  input active-low bias=pull-up consumer=pifire '''
+	busy = {}
+	for line in info.splitlines():
+		match = re.match(r'\s*line\s+(\d+):', line)
+		if not match:
+			continue
+		offset = int(match.group(1))
+		v2 = re.search(r'consumer=("[^"]*"|\S+)', line)
+		quoted = line.split('"')[1::2]
+		if v2:
+			busy[offset] = v2.group(1).strip('"')
+		elif len(quoted) >= 2 and quoted[1] not in ('unused', ''):
+			busy[offset] = quoted[1]
+		elif '[used]' in line and quoted:    # v1 with an unnamed line: only the consumer is quoted
+			busy[offset] = quoted[-1]
+	return busy
+
+
+def serial_console_on(cmdline='/proc/cmdline'):
+	return 'console=ttyS0' in read(cmdline, '')
 
 
 def hdmi_connectors(drm='/sys/class/drm'):
@@ -120,21 +146,8 @@ def report():
 		chip_name = os.path.basename(main)
 		# gpioinfo syntax differs between libgpiod tools v1 and v2
 		info = run(['gpioinfo', chip_name]) or run(['gpioinfo', '-c', chip_name])
-	busy = {}
-	if info:
-		for line in info.splitlines():
-			parts = line.split()
-			if line.strip().startswith('line') and len(parts) > 3 and '"' in line:
-				# libgpiod v1/v2 gpioinfo formats differ; keep the offset and the quoted consumer
-				try:
-					offset = int(parts[1].rstrip(':'))
-				except ValueError:
-					continue
-				quoted = [p for p in line.split('"')[1::2]]
-				if len(quoted) >= 2 and quoted[1] not in ('unused', ''):
-					busy[offset] = quoted[1]
-				elif 'used' in line and 'unused' not in line and quoted:
-					busy[offset] = quoted[-1]
+	busy = gpio_consumers(info or '')
+	console_on = serial_console_on()
 
 	print('\nPin della PCB v4 sull\'Orange Pi Zero 2W:')
 	print(f'  {"funzione":30} {"GPIO Pi":>8} {"pin":>4}  {"Orange Pi":9} {"note"}')
@@ -143,7 +156,7 @@ def report():
 			physical = opi_gpio.bcm_to_physical(bcm)
 			pin_name = opi_gpio.bcm_to_pin_name(bcm)
 			notes = []
-			if opi_gpio.is_console_pin(bcm):
+			if opi_gpio.is_console_pin(bcm) and console_on:
 				notes.append('console seriale')
 			if name.startswith('PWM') and opi_gpio.bcm_to_pwm_channel(bcm) is None:
 				notes.append('senza PWM hardware (usare pin 32)')
@@ -199,8 +212,6 @@ def report():
 		print(f'  {chip}: {read(os.path.join(chip, "npwm"), "?")} canali')
 
 	section('Console seriale (pin 8 e 10)')
-	cmdline = read('/proc/cmdline', '')
-	console_on = 'console=ttyS0' in cmdline
 	getty = run(['systemctl', 'is-active', 'serial-getty@ttyS0.service'])
 	print(f'Kernel console su ttyS0: {"SI" if console_on else "no"}')
 	print(f'Login seriale (serial-getty@ttyS0): {getty or "?"}')
