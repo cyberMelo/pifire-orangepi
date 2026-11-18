@@ -329,6 +329,11 @@ def run(units, probes, presets, pins, messages, parent_pid):
 				elif event[0] == 'press':
 					commands = ui.press(data, now)
 			for action, arglist in commands:
+				if action == 'poweroff':
+					from common.common import shutdown_system
+					log.info('HDMI display: system power off')
+					shutdown_system()     # waits 3 s, so the "SPEGNIMENTO" screen below gets drawn
+					continue
 				result = process_command(action=action, arglist=arglist, origin='display')
 				log.info(f'HDMI display: {action} {"/".join(a for a in arglist if a)} -> {result.get("result")}')
 				force = True

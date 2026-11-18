@@ -41,7 +41,7 @@ ICON = {
 	'fan': 0xf863, 'auger': 0xf101, 'igniter': 0xf46a, 'wifi': 0xf1eb, 'clock': 0xf017,
 	'smoke': 0xf0c2, 'target': 0xf140, 'timer': 0xf2f2, 'back': 0xf060,
 	'startup': 0xf04b, 'hold': 0xf2c9, 'shutdown': 0xf011, 'stop': 0xf04d, 'monitor': 0xf06e,
-	'warning': 0xf071,
+	'warning': 0xf071, 'poweroff': 0xf1e6,
 }
 
 STATUS_H = 58                   # status bar height (units)
@@ -413,7 +413,8 @@ def screen_wifi(c, v):
 
 def screen_message(c, v):
 	f = c.f
-	c.icon(W / 2, 170, 'warning', 54, DANGER, 'mm')
+	icon = v.get('icon', 'warning')
+	c.icon(W / 2, 170, icon, 54, DANGER if icon == 'warning' else MUTED, 'mm')
 	c.text(W / 2, 260, v['text'], f.big(56), TEXT, 'mm')
 	if v.get('note'):
 		c.text(W / 2, 312, v['note'], f.uir(17), MUTED, 'mm')
@@ -479,6 +480,8 @@ def sample_views():
 					'text': 'Parte la candeletta e la coclea carica il pellet.', 'ok': 'Accendi', 'cancel': 'Annulla', 'selected': 'cancel'},
 		'wifi': {'screen': 'wifi', 'ssid': 'PiFire-Setup', 'url': 'http://10.42.0.1', 'qr': 'WIFI:T:nopass;S:PiFire-Setup;;'},
 		'message': {'screen': 'message', 'text': 'ERRORE', 'note': 'Controlla la web app per i dettagli.'},
+		'poweroff': {'screen': 'message', 'icon': 'poweroff', 'text': 'SPEGNIMENTO',
+					 'note': 'Attendi una ventina di secondi, poi puoi staccare la corrente.'},
 	}
 
 

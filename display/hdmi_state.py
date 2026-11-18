@@ -10,7 +10,8 @@ draws the views it returns).
 Commands go through the same API commands as the web app (process_command
 'set' ...), so the rules for modes and set points stay in one place.  Starting
 the grill, shutting it down and stopping a lit grill ask for a confirmation:
-the display is on the grill and a touch can be accidental.
+the display is on the grill and a touch can be accidental.  With the grill in
+Stop the menu can also power the board off, so the plug can be pulled safely.
 '''
 
 import time
@@ -42,11 +43,13 @@ ITEMS = {
 	'monitor': {'label': 'Monitor', 'icon': 'monitor', 'note': 'Solo lettura delle sonde'},
 	'shutdown': {'label': 'Spegnimento', 'icon': 'shutdown', 'note': 'Brucia il pellet rimasto e si spegne'},
 	'stop': {'label': 'Stop', 'icon': 'stop', 'note': 'Ferma tutto subito', 'danger': True},
+	'poweroff': {'label': 'Spegni sistema', 'icon': 'poweroff', 'note': 'Poi si può staccare la corrente'},
 }
 CONFIRM = {
 	'startup': {'icon': 'startup', 'title': 'Accendere il grill?', 'text': 'Parte la candeletta e la coclea carica il pellet.', 'ok': 'Accendi'},
 	'shutdown': {'icon': 'shutdown', 'title': 'Spegnere il grill?', 'text': 'Il fuoco consuma il pellet rimasto, poi si ferma tutto.', 'ok': 'Spegni'},
 	'stop': {'icon': 'stop', 'title': 'Fermare subito?', 'text': 'Nel braciere c\'è ancora fuoco: ventola e coclea si fermano di colpo.', 'ok': 'Stop', 'danger': True},
+	'poweroff': {'icon': 'poweroff', 'title': 'Spegnere il sistema?', 'text': 'PiFire si chiude e la scheda si spegne: per riaccendere, stacca e riattacca la corrente.', 'ok': 'Spegni'},
 }
 
 
@@ -60,7 +63,7 @@ def menu_keys(mode):
 		return ['stop']
 	if mode == 'Monitor':
 		return ['startup', 'stop']
-	return ['startup', 'monitor']   # Stop
+	return ['startup', 'monitor', 'poweroff']   # Stop: only a cold grill can lose its controller
 
 
 def mode_command(key, value=None):
@@ -114,6 +117,7 @@ class Ui:
 		self.message = None
 		self.message_until = 0.0
 		self.reached = set()         # food probes that reached their target
+		self.powering_off = False
 
 	# ------------------------------------------------------------ data helpers
 
@@ -162,6 +166,8 @@ class Ui:
 		self.message_until = now + seconds
 
 	def _current_screen(self, data, now):
+		if self.powering_off:
+			return 'poweroff'
 		if self.message and now < self.message_until:
 			return 'message'
 		self.message = None
@@ -182,6 +188,9 @@ class Ui:
 		if screen == 'message':
 			note = 'Controlla la web app per i dettagli.' if self.message == 'ERRORE' else ''
 			return {'screen': 'message', 'text': self.message, 'note': note}
+		if screen == 'poweroff':
+			return {'screen': 'message', 'icon': 'poweroff', 'text': 'SPEGNIMENTO',
+					'note': 'Attendi una ventina di secondi, poi puoi staccare la corrente.'}
 		if screen == 'wifi':
 			ap = (data.get('wifi') or {}).get('ap') or {}
 			return {'screen': 'wifi', 'ssid': ap.get('ssid', 'PiFire-Setup'), 'url': ap.get('url', 'http://10.42.0.1'),
@@ -337,7 +346,7 @@ class Ui:
 			self.selected = int(target.split(':')[1])
 			return self._activate(view['items'][self.selected]['key'], data, now)
 		if screen == 'confirm':
-			return self._answer(target == 'ok', now)
+			return self._answer(target == 'ok', data, now)
 		return []
 
 	def rotate(self, steps, data, now=None):
@@ -377,7 +386,7 @@ class Ui:
 		elif screen == 'menu':
 			return self._activate(view['items'][self.selected]['key'], data, now)
 		elif screen == 'confirm':
-			return self._answer(self.confirm_choice == 'ok', now)
+			return self._answer(self.confirm_choice == 'ok', data, now)
 		return []
 
 	def _activate(self, key, data, now):
@@ -385,7 +394,7 @@ class Ui:
 		if key == 'hold':
 			self._open_setpoint(data, now)
 			return []
-		if key in ('startup', 'shutdown') or (key == 'stop' and mode in LIT + ('Shutdown',)):
+		if key in ('startup', 'shutdown', 'poweroff') or (key == 'stop' and mode in LIT + ('Shutdown',)):
 			self.pending = key
 			self.confirm_choice = 'cancel'   # the safe answer is the default
 			self._go('confirm', now)
@@ -393,10 +402,17 @@ class Ui:
 		self._go('home', now)
 		return [mode_command(key)]
 
-	def _answer(self, ok, now):
+	def _answer(self, ok, data, now):
 		key, self.pending = self.pending, None
 		self._go('home', now)
-		return [mode_command(key)] if ok and key else []
+		if not (ok and key):
+			return []
+		if key == 'poweroff':
+			if self._mode(data) != 'Stop':
+				return []      # the grill was started meanwhile (web app): it keeps its controller
+			self.powering_off = True
+			return [('poweroff', [])]
+		return [mode_command(key)]
 
 	def _confirm_setpoint(self, data, now):
 		mode = self._mode(data)

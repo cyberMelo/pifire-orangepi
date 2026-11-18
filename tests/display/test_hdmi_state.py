@@ -149,7 +149,7 @@ def test_set_point_screen_closes_when_the_grill_moves_on():
 # ------------------------------------------------------------ menu and confirmation
 
 def test_menu_entries_follow_the_mode():
-	assert hs.menu_keys('Stop') == ['startup', 'monitor']
+	assert hs.menu_keys('Stop') == ['startup', 'monitor', 'poweroff']
 	assert hs.menu_keys('Hold') == ['hold', 'smoke', 'shutdown', 'stop']
 	assert hs.menu_keys('Startup') == ['shutdown', 'stop']
 	assert hs.menu_keys('Shutdown') == ['stop']
@@ -242,3 +242,36 @@ def test_fahrenheit_steps_and_limits():
 	u.rotate(1, data(psp=225), NOW)
 	v = u.view(data(psp=225), NOW)
 	assert v['value'] == 230 and (v['vmin'], v['vmax']) == (150, 500)
+
+
+# ------------------------------------------------------------ system power off
+
+def test_power_off_only_from_a_stopped_grill():
+	assert 'poweroff' in hs.menu_keys('Stop')
+	for mode in ('Startup', 'Smoke', 'Hold', 'Shutdown', 'Monitor', 'Recipe', 'Error'):
+		assert 'poweroff' not in hs.menu_keys(mode)
+
+
+def test_power_off_asks_first_and_then_says_when_to_pull_the_plug():
+	u, d = hs.Ui('C'), data(mode='Stop', psp=0)
+	tap(u, d, 'menu')
+	tap(u, d, f'item:{hs.menu_keys("Stop").index("poweroff")}')
+	v = u.view(d, NOW)
+	assert v['screen'] == 'confirm' and v['selected'] == 'cancel'
+	assert tap(u, d, 'cancel') == [] and u.view(d, NOW)['screen'] == 'home'
+	u.press(d, NOW)                                    # menu
+	u.rotate(2, d, NOW)                                # -> "Spegni sistema"
+	u.press(d, NOW)                                    # confirmation
+	u.rotate(1, d, NOW)                                # -> "Spegni"
+	assert u.press(d, NOW) == [('poweroff', [])]
+	v = u.view(d, NOW + 600)                           # stays, no idle timeout and no wifi screen
+	assert v['screen'] == 'message' and v['text'] == 'SPEGNIMENTO' and 'staccare' in v['note']
+	assert u.press(d, NOW) == [] and u.touch(500, 300, d, NOW) == []
+
+
+def test_no_power_off_if_the_grill_was_started_meanwhile():
+	u = hs.Ui('C')
+	tap(u, data(mode='Stop'), 'menu')
+	tap(u, data(mode='Stop'), f'item:{hs.menu_keys("Stop").index("poweroff")}')
+	assert tap(u, data(mode='Startup'), 'ok') == []
+	assert u.view(data(mode='Startup'), NOW)['screen'] == 'home'
