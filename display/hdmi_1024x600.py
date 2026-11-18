@@ -283,6 +283,10 @@ class DataSource:
 		return self.data
 
 
+# At boot the display starts before Redis is up and before control writes its status
+STARTUP_GRACE_S = 60
+
+
 def run(units, probes, presets, pins, messages, parent_pid):
 	from common.common import process_command
 	from display.hdmi_state import Ui
@@ -300,6 +304,7 @@ def run(units, probes, presets, pins, messages, parent_pid):
 	renderer = Renderer()
 	source = DataSource(probes)
 	last_view, last_draw, force = None, 0.0, True
+	started = time.time()
 	while os.getppid() == parent_pid:   # the control process is gone: stop drawing and free the pins
 		now = time.time()
 		try:
@@ -332,7 +337,10 @@ def run(units, probes, presets, pins, messages, parent_pid):
 				fb.show(renderer.render(view))
 				last_view, last_draw = view, now
 		except Exception:
-			log.exception('HDMI display: error in the display loop')
+			if last_view is None and time.time() - started < STARTUP_GRACE_S:
+				log.debug('HDMI display: waiting for Redis and the control status', exc_info=True)
+			else:
+				log.exception('HDMI display: error in the display loop')
 			time.sleep(2)
 	fb.close()
 

@@ -135,3 +135,54 @@ def test_button_debounce():
 	assert not b.feed(False, 0.300)
 	assert not b.feed(False, 0.350)      # released
 	assert b.feed(True, 0.360) is False and b.feed(True, 0.401)
+
+
+class _FakeFrameBuffer:
+	def __init__(self):
+		self.frames = 0
+
+	def show(self, image):
+		self.frames += 1
+
+	def close(self):
+		pass
+
+
+def _run_loop(monkeypatch, failures, loops):
+	''' Run the display loop for a few rounds; the first refreshes fail as when
+	Redis is not up yet and control has not written its status '''
+	from display import hdmi_state, hdmi_ui
+	fb = _FakeFrameBuffer()
+	monkeypatch.setattr(dev, 'FrameBuffer', lambda: fb)
+	monkeypatch.setattr(dev, '_start_thread', lambda *args: None)
+	monkeypatch.setattr(dev.time, 'sleep', lambda s: None)
+	monkeypatch.setattr(hdmi_ui, 'Renderer', lambda: type('R', (), {'render': lambda self, view: None})())
+	monkeypatch.setattr(hdmi_state.Ui, 'view', lambda self, data, now: {'screen': 'home'})
+
+	class Source:
+		def __init__(self, probes):
+			self.calls = 0
+
+		def refresh(self, now, force=False):
+			self.calls += 1
+			if self.calls <= failures:
+				raise TypeError('the JSON object must be str, bytes or bytearray, not NoneType')
+			return {}
+	monkeypatch.setattr(dev, 'DataSource', Source)
+	rounds = iter(range(loops))
+	monkeypatch.setattr(dev.os, 'getppid', lambda: 1 if next(rounds, None) is not None else 0)
+	dev.run('C', {}, [], {}, dev.queue.Queue(), 1)
+	return fb
+
+
+def test_no_errors_in_the_log_while_the_system_boots(monkeypatch, caplog):
+	''' Board, 2026-11-17: two tracebacks in control.log at every boot '''
+	fb = _run_loop(monkeypatch, failures=3, loops=5)
+	assert fb.frames == 1
+	assert not [r for r in caplog.records if r.levelname == 'ERROR']
+
+
+def test_errors_after_the_boot_are_logged(monkeypatch, caplog):
+	monkeypatch.setattr(dev, 'STARTUP_GRACE_S', 0)
+	_run_loop(monkeypatch, failures=2, loops=3)
+	assert len([r for r in caplog.records if r.levelname == 'ERROR']) == 2
